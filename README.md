@@ -17,10 +17,12 @@ USAGE:
   forward [OPTIONS] [host]
 
 OPTIONS:
-  --help              print help information
-  --version           show version information
-  --cors              enable cors. defaults: false
-  --port=<int>        Specify the port that the proxy server listens on. defaults: 8080
+  --help                            print help information
+  --version                         show version information
+  --cors                            enable cors. defaults: false
+  --cors-allow-headers=<string>     allow send headers from client when cors enabled. defaults: ""
+  --cors-expose-headers=<string>    expose response headers from server when cors enabled. defaults: ""
+  --port=<int>                      Specify the port that the proxy server listens on. defaults: 8080
 
 EXAMPLE:
   forward http://example.com

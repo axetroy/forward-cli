@@ -23,10 +23,12 @@ USAGE:
   forward [OPTIONS] [host]
 
 OPTIONS:
-  --help              print help information
-  --version           show version information
-  --cors              enable cors. defaults: false
-  --port=<int>        Specify the port that the proxy server listens on. defaults: 8080
+  --help                            print help information
+  --version                         show version information
+  --cors                            enable cors. defaults: false
+  --cors-allow-headers=<string>     allow send headers from client when cors enabled. defaults: ""
+  --cors-expose-headers=<string>    expose response headers from server when cors enabled. defaults: ""
+  --port=<int>                      Specify the port that the proxy server listens on. defaults: 8080
 
 EXAMPLE:
   forward http://example.com
@@ -34,23 +36,29 @@ EXAMPLE:
 }
 
 type ProxyServer struct {
-	target *url.URL
-	cors   bool
-	proxy  *httputil.ReverseProxy
+	target            *url.URL
+	cors              bool
+	corsAllowHeaders  string
+	corsExposeHeaders string
+	proxy             *httputil.ReverseProxy
 }
 
 type ProxyServerOptions struct {
-	Target *url.URL
-	Cors   bool
+	Target            *url.URL
+	Cors              bool
+	CorsAllowHeaders  string
+	CorsExposeHeaders string
 }
 
 func NewProxyServer(options ProxyServerOptions) *ProxyServer {
 	proxy := httputil.NewSingleHostReverseProxy(options.Target)
 
 	server := &ProxyServer{
-		cors:   options.Cors,
-		target: options.Target,
-		proxy:  proxy,
+		cors:              options.Cors,
+		corsAllowHeaders:  options.CorsAllowHeaders,
+		corsExposeHeaders: options.CorsExposeHeaders,
+		target:            options.Target,
+		proxy:             proxy,
 	}
 
 	originalDirector := proxy.Director
@@ -79,20 +87,32 @@ func (p *ProxyServer) modifyRequest(req *http.Request) {
 	req.Header.Set("Referrer", fmt.Sprintf("%s://%s%s", p.target.Scheme, p.target.Host, req.URL.RawPath))
 	req.Header.Set("X-Real-IP", req.RemoteAddr)
 	req.Header.Set("X-Forwarded-For", fmt.Sprintf("%s://%s", p.target.Scheme, p.target.Host))
-	req.Header.Set("X-Proxy", "Forward-Cli")
+	req.Header.Set("X-Proxy-Client", "Forward-Cli")
 }
 
 func (p *ProxyServer) modifyResponse(res *http.Response) error {
-	res.Header.Set("X-Proxy", "Forward-Cli")
+	res.Header.Set("X-Proxy-Client", "Forward-Cli")
+	if p.cors {
+		res.Header.Set("Access-Control-Allow-Origin", "*")
+		res.Header.Set("Access-Control-Allow-Credentials", "true")
+		if p.corsAllowHeaders != "" {
+			res.Header.Add("Access-Control-Allow-Headers", p.corsAllowHeaders)
+		}
+		if p.corsExposeHeaders != "" {
+			res.Header.Add("Access-Control-Expose-Headers", p.corsExposeHeaders)
+		}
+	}
 	return nil
 }
 
 func main() {
 	var (
-		showHelp    bool
-		showVersion bool
-		cors        bool
-		port        string = "8080"
+		showHelp          bool
+		showVersion       bool
+		cors              bool
+		corsAllowHeaders  string
+		corsExposeHeaders string
+		port              string = "8080"
 	)
 
 	if len(os.Getenv("PORT")) > 0 {
@@ -106,6 +126,8 @@ func main() {
 	flag.BoolVar(&showHelp, "help", false, "")
 	flag.BoolVar(&showVersion, "version", false, "")
 	flag.BoolVar(&cors, "cors", false, "")
+	flag.StringVar(&corsAllowHeaders, "cors-allow-headers", corsAllowHeaders, "")
+	flag.StringVar(&corsExposeHeaders, "cors-expose-headers", corsExposeHeaders, "")
 	flag.StringVar(&port, "port", port, "")
 
 	flag.Usage = printHelp
@@ -133,8 +155,10 @@ func main() {
 	target := fmt.Sprintf("%s://%s", u.Scheme, u.Host)
 
 	proxy := NewProxyServer(ProxyServerOptions{
-		Cors:   cors,
-		Target: u,
+		Cors:              cors,
+		CorsAllowHeaders:  corsAllowHeaders,
+		CorsExposeHeaders: corsExposeHeaders,
+		Target:            u,
 	})
 
 	http.HandleFunc("/", proxy.Handler())
