@@ -18,7 +18,7 @@ var (
 )
 
 func printHelp() {
-	println(`forward - A cli for setup a Reverse Proxy server
+	println(`forward - A command line tool to quickly setup a reverse proxy server.
 
 USAGE:
   forward [OPTIONS] [host]
@@ -26,6 +26,7 @@ USAGE:
 OPTIONS:
   --help              print help information
   --version           show version information
+  --cors              enable cors. defaults: false
   --port=<int>        Specify the port that the proxy server listens on. defaults: 8080
 
 EXAMPLE:
@@ -92,6 +93,7 @@ func main() {
 	var (
 		showHelp    bool
 		showVersion bool
+		cors        bool
 		port        string = "8080"
 	)
 
@@ -105,6 +107,7 @@ func main() {
 
 	flag.BoolVar(&showHelp, "help", false, "")
 	flag.BoolVar(&showVersion, "version", false, "")
+	flag.BoolVar(&cors, "cors", false, "")
 	flag.StringVar(&port, "port", port, "")
 
 	flag.Usage = printHelp
@@ -132,7 +135,7 @@ func main() {
 	target := fmt.Sprintf("%s://%s", u.Scheme, u.Host)
 
 	proxy := NewProxyServer(ProxyServerOptions{
-		Cors:   false,
+		Cors:   cors,
 		Target: u,
 	})
 

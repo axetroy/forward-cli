@@ -11,7 +11,7 @@ A command line tool to quickly setup a reverse proxy server.
 ### Usage
 
 ```bash
-forward - A cli for setup a Reverse Proxy server
+forward - A command line tool to quickly setup a reverse proxy server.
 
 USAGE:
   forward [OPTIONS] [host]
@@ -19,6 +19,7 @@ USAGE:
 OPTIONS:
   --help              print help information
   --version           show version information
+  --cors              enable cors. defaults: false
   --port=<int>        Specify the port that the proxy server listens on. defaults: 8080
 
 EXAMPLE:
