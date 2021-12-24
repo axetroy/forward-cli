@@ -1,3 +1,3 @@
-module github.com/axetroy/go-cli-boilerplate
+module github.com/axetroy/forward-cli
 
-go 1.15
+go 1.17

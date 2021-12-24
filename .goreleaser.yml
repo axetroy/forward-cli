@@ -1,6 +1,6 @@
 builds:
-  - binary: go-cli-boilerplate
-    main: ./cmd/go-cli-boilerplate/main.go
+  - binary: forward
+    main: ./main.go
     goos:
       - windows
       - darwin

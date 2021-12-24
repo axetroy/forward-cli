@@ -1,17 +1,29 @@
-[![Build Status](https://github.com/axetroy/go-cli-boilerplate/workflows/ci/badge.svg)](https://github.com/axetroy/go-cli-boilerplate/actions)
-[![Go Report Card](https://goreportcard.com/badge/github.com/axetroy/go-cli-boilerplate)](https://goreportcard.com/report/github.com/axetroy/go-cli-boilerplate)
-![Latest Version](https://img.shields.io/github/v/release/axetroy/go-cli-boilerplate.svg)
-![License](https://img.shields.io/github/license/axetroy/go-cli-boilerplate.svg)
-![Repo Size](https://img.shields.io/github/repo-size/axetroy/go-cli-boilerplate.svg)
+[![Build Status](https://github.com/axetroy/forward-cli/workflows/ci/badge.svg)](https://github.com/axetroy/forward-cli/actions)
+[![Go Report Card](https://goreportcard.com/badge/github.com/axetroy/forward-cli)](https://goreportcard.com/report/github.com/axetroy/forward-cli)
+![Latest Version](https://img.shields.io/github/v/release/axetroy/forward-cli.svg)
+![License](https://img.shields.io/github/license/axetroy/forward-cli.svg)
+![Repo Size](https://img.shields.io/github/repo-size/axetroy/forward-cli.svg)
 
-## go-cli-boilerplate
+## forward-cli
 
-> go-cli-boilerplate
+A command line tool to quickly setup a reverse proxy server.
 
 ### Usage
 
 ```bash
+forward - A cli for setup a Reverse Proxy server
 
+USAGE:
+  forward [OPTIONS] [host]
+
+OPTIONS:
+  --help              print help information
+  --version           show version information
+  --port=<int>        Specify the port that the proxy server listens on. defaults: 8080
+
+EXAMPLE:
+  forward http://example.com
+  forward --port=80 http://example.com
 ```
 
 ### Install
@@ -19,35 +31,23 @@
 1. Shell (Mac/Linux)
 
 ```bash
-# install latest version
-curl -fsSL https://raw.githubusercontent.com/axetroy/go-cli-boilerplate/master/install.sh | bash
-# or install specified version
-curl -fsSL https://raw.githubusercontent.com/axetroy/go-cli-boilerplate/master/install.sh | bash -s v0.1.0
-# or install from gobinaries.com
-curl -sf https://gobinaries.com/axetroy/go-cli-boilerplate@v0.1.0 | sh
+curl -fsSL https://github.com/release-lab/install/raw/v1/install.sh | bash -s -- -r=axetroy/forward-cli -e=forward
 ```
 
 2. PowerShell (Windows):
 
-```bash
-# install latest version
-iwr https://github.com/axetroy/go-cli-boilerplate/raw/master/install.ps1 -useb | iex
-# or install specified version
-$v="v0.1.0"; iwr https://github.com/axetroy/go-cli-boilerplate/raw/master/install.ps1 -useb | iex
+```powershell
+$r="axetroy/forward-cli";$e="forward";iwr https://github.com/release-lab/install/raw/v1/install.ps1 -useb | iex
 ```
 
-3. [Github release page](https://github.com/axetroy/go-cli-boilerplate/releases) (All platforms)
+3. [Github release page](https://github.com/axetroy/forward-cli/releases) (All platforms)
 
-download the executable file and put the executable file to `$PATH` then try the following command:
-
-```bash
-$ go-cli-boilerplate --help
-```
+> download the executable file and put the executable file to `$PATH`
 
 4. Build and install from source using [Golang](https://golang.org) (All platforms)
 
 ```bash
-go install github.com/axetroy/go-cli-boilerplate/cmd/go-cli-boilerplate@v0.1.0
+go install github.com/axetroy/forward-cli@latest
 ```
 
 ### License

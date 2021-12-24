@@ -11,4 +11,4 @@ format:
 	go fmt ./...
 
 format-check:
-	gofmt -l cmd/go-cli-boilerplate/main.go
+	gofmt -l main.go
