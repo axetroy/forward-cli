@@ -146,10 +146,20 @@ func main() {
 
 	server := flag.Arg(0)
 
+	if server == "" {
+		fmt.Printf("ERR: proxy server is required\n\n")
+		printHelp()
+		os.Exit(1)
+	}
+
 	u, err := url.Parse(server)
 
 	if err != nil {
 		panic("invalid host")
+	}
+
+	if u.Scheme != "http" && u.Scheme != "https" {
+		panic("invalid proxy target")
 	}
 
 	target := fmt.Sprintf("%s://%s", u.Scheme, u.Host)
