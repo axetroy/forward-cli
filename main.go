@@ -14,7 +14,6 @@ var (
 	version = "dev"
 	commit  = "none"
 	date    = "unknown"
-	builtBy = "unknown"
 )
 
 func printHelp() {
@@ -75,13 +74,12 @@ func (p *ProxyServer) Handler() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func (p *ProxyServer) modifyRequest(req *http.Request) error {
+func (p *ProxyServer) modifyRequest(req *http.Request) {
 	req.Header.Set("Host", p.target.Host)
 	req.Header.Set("Referrer", fmt.Sprintf("%s://%s%s", p.target.Scheme, p.target.Host, req.URL.RawPath))
 	req.Header.Set("X-Real-IP", req.RemoteAddr)
 	req.Header.Set("X-Forwarded-For", fmt.Sprintf("%s://%s", p.target.Scheme, p.target.Host))
 	req.Header.Set("X-Proxy", "Forward-Cli")
-	return nil
 }
 
 func (p *ProxyServer) modifyResponse(res *http.Response) error {
