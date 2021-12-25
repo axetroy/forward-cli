@@ -9,6 +9,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strings"
 )
 
 var (
@@ -24,20 +25,26 @@ USAGE:
   forward [OPTIONS] [host]
 
 OPTIONS:
-  --help                            print help information
-  --version                         show version information
-  --cors                            enable cors. defaults: false
-  --cors-allow-headers=<string>     allow send headers from client when cors enabled. defaults: ""
-  --cors-expose-headers=<string>    expose response headers from server when cors enabled. defaults: ""
-  --port=<int>                      specify the port that the proxy server listens on. defaults: 8080
+  --help                              print help information
+  --version                           show version information
+  --port="<int>"                      specify the port that the proxy server listens on. defaults: 8080
+  --req-header="key=value"            specify the request header attached to the request. defaults: ""
+  --req-header="key=value"            specify the response headers. defaults: ""
+  --cors                              enable cors. defaults: false
+  --cors-allow-headers="<string>"     allow send headers from client when cors enabled. defaults: ""
+  --cors-expose-headers="<string>"    expose response headers from server when cors enabled. defaults: ""
 
 EXAMPLES:
   forward http://example.com
-  forward --port=80 http://example.com`)
+  forward --port=80 http://example.com
+  forward --req-header="foo=bar" http://example.com
+  forward --cors --cors-allow-headers="Auth, Token" http://example.com`)
 }
 
 type ProxyServer struct {
 	target            *url.URL
+	reqHeaders        http.Header
+	resHeaders        http.Header
 	cors              bool
 	corsAllowHeaders  string
 	corsExposeHeaders string
@@ -46,6 +53,8 @@ type ProxyServer struct {
 
 type ProxyServerOptions struct {
 	Target            *url.URL
+	ReqHeaders        http.Header
+	ResHeaders        http.Header
 	Cors              bool
 	CorsAllowHeaders  string
 	CorsExposeHeaders string
@@ -55,6 +64,8 @@ func NewProxyServer(options ProxyServerOptions) *ProxyServer {
 	proxy := httputil.NewSingleHostReverseProxy(options.Target)
 
 	server := &ProxyServer{
+		reqHeaders:        options.ReqHeaders,
+		resHeaders:        options.ResHeaders,
 		cors:              options.Cors,
 		corsAllowHeaders:  options.CorsAllowHeaders,
 		corsExposeHeaders: options.CorsExposeHeaders,
@@ -90,6 +101,10 @@ func (p *ProxyServer) modifyRequest(req *http.Request) {
 	req.Header.Set("Referrer", fmt.Sprintf("%s://%s%s", p.target.Scheme, p.target.Host, req.URL.RawPath))
 	req.Header.Set("X-Real-IP", req.RemoteAddr)
 	req.Header.Set("X-Forwarded-For", fmt.Sprintf("%s://%s", p.target.Scheme, p.target.Host))
+
+	for k := range p.reqHeaders {
+		req.Header.Add(k, p.reqHeaders.Get(k))
+	}
 }
 
 func (p *ProxyServer) modifyResponse(res *http.Response) error {
@@ -104,6 +119,11 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 			res.Header.Add("Access-Control-Expose-Headers", p.corsExposeHeaders)
 		}
 	}
+
+	for k := range p.resHeaders {
+		res.Header.Add(k, p.resHeaders.Get(k))
+	}
+
 	return nil
 }
 
@@ -121,14 +141,27 @@ func getLocalIP() net.IP {
 	return localAddr.IP
 }
 
+type arrayFlags []string
+
+func (i *arrayFlags) String() string {
+	return "custom array flag"
+}
+
+func (i *arrayFlags) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
 func main() {
 	var (
-		showHelp          bool
-		showVersion       bool
-		cors              bool
-		corsAllowHeaders  string
-		corsExposeHeaders string
-		port              string = "8080"
+		showHelp             bool
+		showVersion          bool
+		cors                 bool
+		corsAllowHeaders     string
+		corsExposeHeaders    string
+		requestHeadersArray  arrayFlags
+		responseHeadersArray arrayFlags
+		port                 string = "8080"
 	)
 
 	if len(os.Getenv("PORT")) > 0 {
@@ -141,6 +174,8 @@ func main() {
 
 	flag.BoolVar(&showHelp, "help", false, "")
 	flag.BoolVar(&showVersion, "version", false, "")
+	flag.Var(&requestHeadersArray, "req-header", "")
+	flag.Var(&responseHeadersArray, "res-header", "")
 	flag.BoolVar(&cors, "cors", false, "")
 	flag.StringVar(&corsAllowHeaders, "cors-allow-headers", corsAllowHeaders, "")
 	flag.StringVar(&corsExposeHeaders, "cors-expose-headers", corsExposeHeaders, "")
@@ -179,8 +214,22 @@ func main() {
 	}
 
 	target := fmt.Sprintf("%s://%s", u.Scheme, u.Host)
+	requestHeaders := http.Header{}
+	responseHeaders := http.Header{}
+
+	for _, paren := range requestHeadersArray {
+		arr := strings.Split(paren, "=")
+		requestHeaders.Set(arr[0], strings.Join(arr[1:], "="))
+	}
+
+	for _, paren := range responseHeadersArray {
+		arr := strings.Split(paren, "=")
+		responseHeaders.Set(arr[0], strings.Join(arr[1:], "="))
+	}
 
 	proxy := NewProxyServer(ProxyServerOptions{
+		ReqHeaders:        requestHeaders,
+		ResHeaders:        responseHeaders,
 		Cors:              cors,
 		CorsAllowHeaders:  corsAllowHeaders,
 		CorsExposeHeaders: corsExposeHeaders,
