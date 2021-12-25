@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"regexp"
 	"strings"
 
 	"github.com/andybalholm/brotli"
@@ -91,9 +90,13 @@ func (p *ProxyServer) modifyContent(body []byte, host string) []byte {
 	bodyStr := string(body)
 
 	replaceMap := map[string]string{
-		"https://": "http://",
-		"wss://":   "ws://",
-		"//":       "//",
+		"https://":     "http://",
+		"https:\\/\\/": "http://",
+		"http://":      "http://",
+		"http:\\/\\/":  "http://",
+		"wss://":       "ws://",
+		"//":           "//",
+		"":             "",
 	}
 
 	var newBodyStr = bodyStr
@@ -101,8 +104,8 @@ func (p *ProxyServer) modifyContent(body []byte, host string) []byte {
 	for oldScheme, newScheme := range replaceMap {
 		originHost := oldScheme + p.target.Host
 		proxyHost := newScheme + host
-		// newBodyStr = strings.ReplaceAll(newBodyStr, originHost, proxyHost)
-		newBodyStr = regexp.MustCompile("\\b"+strings.ReplaceAll(originHost, ".", "\\.")+"\\b").ReplaceAllString(newBodyStr, proxyHost)
+		newBodyStr = strings.ReplaceAll(newBodyStr, originHost, proxyHost)
+		// newBodyStr = regexp.MustCompile("\\b"+strings.ReplaceAll(originHost, ".", "\\.")+"\\b").ReplaceAllString(newBodyStr, proxyHost)
 	}
 
 	// TODO: fix me
