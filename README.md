@@ -22,7 +22,7 @@ OPTIONS:
   --cors                            enable cors. defaults: false
   --cors-allow-headers=<string>     allow send headers from client when cors enabled. defaults: ""
   --cors-expose-headers=<string>    expose response headers from server when cors enabled. defaults: ""
-  --port=<int>                      Specify the port that the proxy server listens on. defaults: 8080
+  --port=<int>                      specify the port that the proxy server listens on. defaults: 8080
 
 EXAMPLE:
   forward http://example.com

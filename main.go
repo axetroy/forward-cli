@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -28,7 +29,7 @@ OPTIONS:
   --cors                            enable cors. defaults: false
   --cors-allow-headers=<string>     allow send headers from client when cors enabled. defaults: ""
   --cors-expose-headers=<string>    expose response headers from server when cors enabled. defaults: ""
-  --port=<int>                      Specify the port that the proxy server listens on. defaults: 8080
+  --port=<int>                      specify the port that the proxy server listens on. defaults: 8080
 
 EXAMPLE:
   forward http://example.com
@@ -105,6 +106,20 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 	return nil
 }
 
+func getLocalIP() net.IP {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP
+}
+
 func main() {
 	var (
 		showHelp          bool
@@ -173,7 +188,9 @@ func main() {
 
 	http.HandleFunc("/", proxy.Handler())
 
-	log.Printf("Proxy 'http://0.0.0.0:%s' to '%s'\n", port, target)
+	ip := getLocalIP()
+
+	log.Printf("Proxy 'http://%s:%s' to '%s'\n", ip, port, target)
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }
