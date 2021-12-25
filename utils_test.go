@@ -29,7 +29,7 @@ func Test_replaceHost(t *testing.T) {
 				origin:  "example.com",
 				target:  "localhost:8080",
 			},
-			want: "https://example.com.hk",
+			want: "http://localhost:8080/?forward_url=https%3A%2F%2Fexample.com.hk",
 		},
 		{
 			name: "3",
@@ -47,7 +47,7 @@ func Test_replaceHost(t *testing.T) {
 				origin:  "example.com",
 				target:  "localhost:8080",
 			},
-			want: "https://example.com.hk/demo",
+			want: "http://localhost:8080/?forward_url=https%3A%2F%2Fexample.com.hk%2Fdemo",
 		},
 		{
 			name: "5",
@@ -74,7 +74,7 @@ func Test_replaceHost(t *testing.T) {
 				origin:  "www.baidu.com",
 				target:  "localhost:8080",
 			},
-			want: "https://passport.baidu.com/v2/?login&tpl=mn&u=http%3A%2F%2Flocalhost%3A8080%2F",
+			want: "http://localhost:8080/?forward_url=https%3A%2F%2Fpassport.baidu.com%2Fv2%2F%3Flogin%26tpl%3Dmn%26u%3Dhttp%253A%252F%252Flocalhost%253A8080%252F",
 		},
 	}
 	for _, tt := range tests {
