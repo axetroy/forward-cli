@@ -24,10 +24,6 @@ builds:
     flags:
       - -mod=vendor
       - -trimpath
-    asmflags:
-      - all=-trimpath={{.Env.GOPATH}}
-    gcflags:
-      - all=-trimpath={{.Env.GOPATH}}
 
 archives:
   - files:
