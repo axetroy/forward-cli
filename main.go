@@ -102,7 +102,6 @@ func (p *ProxyServer) modifyRequest(req *http.Request) {
 	req.Header.Set("Origin", fmt.Sprintf("%s://%s", p.target.Scheme, p.target.Host))
 	req.Header.Set("Referrer", fmt.Sprintf("%s://%s%s", p.target.Scheme, p.target.Host, req.URL.RawPath))
 	req.Header.Set("X-Real-IP", req.RemoteAddr)
-	req.Header.Set("X-Forwarded-For", fmt.Sprintf("%s://%s", p.target.Scheme, p.target.Host))
 
 	for k := range p.reqHeaders {
 		req.Header.Add(k, p.reqHeaders.Get(k))
