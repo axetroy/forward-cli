@@ -17,6 +17,7 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
+          stable: false
 
       - name: Environment
         run: |
@@ -62,6 +63,7 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
+          stable: false
 
       - uses: axetroy/setup-whatchanged@v1
         with:
