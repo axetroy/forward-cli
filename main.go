@@ -95,6 +95,7 @@ func (p *ProxyServer) Handler() func(http.ResponseWriter, *http.Request) {
 }
 
 func (p *ProxyServer) modifyRequest(req *http.Request) {
+	req.Header.Set("X-Origin-Host", req.Host)
 	req.Host = p.target.Host
 	req.URL.Host = p.target.Host
 	req.URL.Scheme = p.target.Scheme
@@ -109,6 +110,14 @@ func (p *ProxyServer) modifyRequest(req *http.Request) {
 }
 
 func (p *ProxyServer) modifyResponse(res *http.Response) error {
+	host := res.Request.Header.Get("X-Origin-Host") // localhost:8080
+
+	hostName, _, err := net.SplitHostPort(host)
+
+	if err != nil {
+		return err
+	}
+
 	res.Header.Set("X-Proxy-Client", "Forward-Cli")
 	res.Header.Del("Expect-CT")
 
@@ -118,7 +127,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 		res.Header.Del("Set-Cookie")
 
 		for _, v := range cookies {
-			v.Domain = ""
+			v.Domain = hostName
 			if v.Secure {
 				v.Secure = false
 			}
