@@ -60,7 +60,7 @@ func NewProxyServer(options ProxyServerOptions) *ProxyServer {
 	proxy.ErrorHandler = func(rw http.ResponseWriter, r *http.Request, err error) {
 		fmt.Printf("Got error while modifying response: %v \n", err)
 		rw.WriteHeader(http.StatusInternalServerError)
-		rw.Write([]byte(err.Error()))
+		_, _ = rw.Write([]byte(err.Error()))
 	}
 
 	return server
@@ -174,7 +174,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 			return nil
 		}
 
-		replaceExtNames := []string{".html", ".htm", ".css", ".js", ".ts", ".txt", ".text"}
+		replaceExtNames := []string{".html", ".htm", ".xhtml", ".xml", ".yml", ".yaml", ".css", ".js", ".txt", ".text", ".json"}
 		isSupportReplace := false
 
 		for _, v := range replaceExtNames {
