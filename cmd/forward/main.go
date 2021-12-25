@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/axetroy/forward-cli"
+	forward "github.com/axetroy/forward-cli"
 )
 
 var (
