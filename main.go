@@ -96,6 +96,8 @@ func (p *ProxyServer) Handler() func(http.ResponseWriter, *http.Request) {
 
 func (p *ProxyServer) modifyRequest(req *http.Request) {
 	req.Host = p.target.Host
+	req.URL.Host = p.target.Host
+	req.URL.Scheme = p.target.Scheme
 	req.Header.Set("Host", p.target.Host)
 	req.Header.Set("Origin", fmt.Sprintf("%s://%s", p.target.Scheme, p.target.Host))
 	req.Header.Set("Referrer", fmt.Sprintf("%s://%s%s", p.target.Scheme, p.target.Host, req.URL.RawPath))
