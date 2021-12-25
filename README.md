@@ -49,7 +49,7 @@ EXAMPLES:
 
 3. [Github release page](https://github.com/axetroy/forward-cli/releases) (All platforms)
 
-   > download the executable file and put the executable file to `$PATH`
+   download the executable file and put the executable file to `$PATH`
 
 4. Build and install from source using [Golang](https://golang.org) (All platforms)
 
