@@ -84,11 +84,12 @@ func (p *ProxyServer) Handler() func(http.ResponseWriter, *http.Request) {
 }
 
 func (p *ProxyServer) modifyRequest(req *http.Request) {
+	req.Host = p.target.Host
 	req.Header.Set("Host", p.target.Host)
+	req.Header.Set("Origin", fmt.Sprintf("%s://%s", p.target.Scheme, p.target.Host))
 	req.Header.Set("Referrer", fmt.Sprintf("%s://%s%s", p.target.Scheme, p.target.Host, req.URL.RawPath))
 	req.Header.Set("X-Real-IP", req.RemoteAddr)
 	req.Header.Set("X-Forwarded-For", fmt.Sprintf("%s://%s", p.target.Scheme, p.target.Host))
-	req.Header.Set("X-Proxy-Client", "Forward-Cli")
 }
 
 func (p *ProxyServer) modifyResponse(res *http.Response) error {
