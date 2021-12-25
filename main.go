@@ -110,6 +110,33 @@ func (p *ProxyServer) modifyRequest(req *http.Request) {
 
 func (p *ProxyServer) modifyResponse(res *http.Response) error {
 	res.Header.Set("X-Proxy-Client", "Forward-Cli")
+	res.Header.Del("Expect-CT")
+
+	// overwrite cookies
+	{
+		cookies := res.Cookies()
+		res.Header.Del("Set-Cookie")
+
+		for _, v := range cookies {
+			v.Domain = ""
+			if v.Secure {
+				v.Secure = false
+			}
+
+			res.Header.Add("Set-Cookie", v.String())
+		}
+	}
+
+	// overrit 302 Location
+	{
+		for _, v := range res.Header["Location"] {
+			// replace location
+			newLocation := strings.Replace(v, fmt.Sprintf("%s://%s", p.target.Scheme, p.target.Host), "", -1)
+
+			res.Header.Set("Location", newLocation)
+		}
+	}
+
 	if p.cors {
 		res.Header.Set("Access-Control-Allow-Origin", "*")
 		res.Header.Set("Access-Control-Allow-Credentials", "true")
