@@ -89,30 +89,9 @@ func (p *ProxyServer) modifyRequest(req *http.Request) {
 func (p *ProxyServer) modifyContent(body []byte, host string) []byte {
 	bodyStr := string(body)
 
-	replaceMap := map[string]string{
-		"https://":     "http://",
-		"https:\\/\\/": "http://",
-		"http://":      "http://",
-		"http:\\/\\/":  "http://",
-		"wss://":       "ws://",
-		"//":           "//",
-		"":             "",
-	}
+	bodyStr = replaceHost(bodyStr, p.target.Host, host)
 
-	var newBodyStr = bodyStr
-
-	for oldScheme, newScheme := range replaceMap {
-		originHost := oldScheme + p.target.Host
-		proxyHost := newScheme + host
-		newBodyStr = strings.ReplaceAll(newBodyStr, originHost, proxyHost)
-		// newBodyStr = regexp.MustCompile("\\b"+strings.ReplaceAll(originHost, ".", "\\.")+"\\b").ReplaceAllString(newBodyStr, proxyHost)
-	}
-
-	// TODO: fix me
-	newBodyStr = strings.ReplaceAll(newBodyStr, host+".", p.target.Host+".")
-	newBodyStr = strings.ReplaceAll(newBodyStr, "."+host, "."+p.target.Host)
-
-	return []byte(newBodyStr)
+	return []byte(bodyStr)
 }
 
 func (p *ProxyServer) modifyResponse(res *http.Response) error {
