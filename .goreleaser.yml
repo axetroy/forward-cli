@@ -7,11 +7,15 @@ builds:
       - linux
       - openbsd
       - freebsd
+      - netbsd
     goarch:
       - amd64
       - arm
       - arm64
       - 386
+      - mips64
+      - mips64le
+      - riscv64
     goarm:
       - 6
       - 7
@@ -20,6 +24,10 @@ builds:
     flags:
       - -mod=vendor
       - -trimpath
+    asmflags:
+      - all=-trimpath={{.Env.GOPATH}}
+    gcflags:
+      - all=-trimpath={{.Env.GOPATH}}
 
 archives:
   - files:
