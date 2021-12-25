@@ -1,15 +1,24 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
+	"compress/zlib"
 	"flag"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
+	"mime"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
+
+	"github.com/andybalholm/brotli"
 )
 
 var (
@@ -109,6 +118,31 @@ func (p *ProxyServer) modifyRequest(req *http.Request) {
 	}
 }
 
+func (p *ProxyServer) modifyContent(body []byte, host string) []byte {
+	bodyStr := string(body)
+
+	replaceMap := map[string]string{
+		"https://": "http://",
+		"wss://":   "ws://",
+		"//":       "//",
+	}
+
+	var newBodyStr = bodyStr
+
+	for oldScheme, newScheme := range replaceMap {
+		originHost := oldScheme + p.target.Host
+		proxyHost := newScheme + host
+		// newBodyStr = strings.ReplaceAll(newBodyStr, originHost, proxyHost)
+		newBodyStr = regexp.MustCompile("\\b"+strings.ReplaceAll(originHost, ".", "\\.")+"\\b").ReplaceAllString(newBodyStr, proxyHost)
+	}
+
+	// TODO: fix me
+	newBodyStr = strings.ReplaceAll(newBodyStr, host+".", p.target.Host+".")
+	newBodyStr = strings.ReplaceAll(newBodyStr, "."+host, "."+p.target.Host)
+
+	return []byte(newBodyStr)
+}
+
 func (p *ProxyServer) modifyResponse(res *http.Response) error {
 	host := res.Request.Header.Get("X-Origin-Host") // localhost:8080
 
@@ -161,6 +195,150 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 		res.Header.Add(k, p.resHeaders.Get(k))
 	}
 
+	// replace HTML/css/javascript content
+	{
+		contentType := res.Header.Get("Content-Type")
+
+		ext, err := mime.ExtensionsByType(contentType)
+
+		if err != nil {
+			return nil
+		}
+
+		replaceExtNames := []string{".html", ".htm", ".css", ".js", ".ts", ".txt", ".text"}
+		isSupportReplace := false
+
+		for _, v := range replaceExtNames {
+			if contains(ext, v) {
+				isSupportReplace = true
+				break
+			}
+		}
+
+		if !isSupportReplace {
+			return nil
+		}
+
+		encoding := res.Header.Get("Content-Encoding")
+
+		// https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Content-Encoding
+		switch encoding {
+		case "gzip":
+			reader, err := gzip.NewReader(res.Body)
+
+			if err != nil {
+				return err
+			}
+
+			defer reader.Close()
+
+			body, err := ioutil.ReadAll(reader)
+
+			if err != nil {
+				return err
+			}
+
+			newBody := p.modifyContent(body, host)
+
+			var b bytes.Buffer
+			gz := gzip.NewWriter(&b)
+
+			if _, err := gz.Write(newBody); err != nil {
+				return err
+			}
+
+			if err := gz.Close(); err != nil {
+				return err
+			}
+
+			bin := b.Bytes()
+			res.Header.Set("Content-Length", fmt.Sprint(len(bin)))
+			res.Body = io.NopCloser(bytes.NewReader(bin))
+		case "compress":
+			// Deprecated by most browsers
+		case "deflate":
+			reader, err := zlib.NewReader(res.Body)
+
+			if err != nil {
+				return err
+			}
+
+			body, err := ioutil.ReadAll(reader)
+
+			defer reader.Close()
+
+			if err != nil {
+				return err
+			}
+
+			newBody := p.modifyContent(body, host)
+
+			buf := &bytes.Buffer{}
+
+			w := zlib.NewWriter(buf)
+
+			if n, err := w.Write(newBody); err != nil {
+				return err
+			} else if n < len(newBody) {
+				return fmt.Errorf("n too small: %d vs %d for %s", n, len(newBody), string(newBody))
+			}
+
+			if err := w.Close(); err != nil {
+				return err
+			}
+
+			res.Header.Set("Content-Length", fmt.Sprint(buf.Len()))
+			res.Body = io.NopCloser(buf)
+		case "br":
+			reader := brotli.NewReader(res.Body)
+
+			body, err := ioutil.ReadAll(reader)
+
+			if err != nil {
+				return err
+			}
+
+			newBody := p.modifyContent(body, host)
+
+			buf := &bytes.Buffer{}
+			w := brotli.NewWriter(buf)
+			if n, err := w.Write(newBody); err != nil {
+				return err
+			} else if n < len(newBody) {
+				return fmt.Errorf("n too small: %d vs %d for %s", n, len(newBody), string(newBody))
+			}
+
+			if err := w.Close(); err != nil {
+				return err
+			}
+
+			res.Header.Set("Content-Length", fmt.Sprint(buf.Len()))
+			res.Body = io.NopCloser(buf)
+		case "identity":
+			fallthrough
+		default:
+			// origin response data without compress
+
+			body, err := ioutil.ReadAll(res.Body)
+
+			if err != nil {
+				return err
+			}
+
+			defer res.Body.Close()
+
+			newBody := p.modifyContent(body, host)
+
+			if err != nil {
+				return err
+			}
+
+			res.Header.Set("Content-Length", fmt.Sprint(len(newBody)))
+			res.Body = io.NopCloser(bytes.NewReader(newBody))
+		}
+
+	}
+
 	return nil
 }
 
@@ -187,6 +365,16 @@ func (i *arrayFlags) String() string {
 func (i *arrayFlags) Set(value string) error {
 	*i = append(*i, value)
 	return nil
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
 }
 
 func main() {
