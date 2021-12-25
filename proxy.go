@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/andybalholm/brotli"
@@ -57,6 +60,9 @@ func NewProxyServer(options ProxyServerOptions) *ProxyServer {
 
 	proxy.ModifyResponse = server.modifyResponse
 	proxy.ErrorHandler = func(rw http.ResponseWriter, r *http.Request, err error) {
+		if errors.Is(err, context.Canceled) {
+			return
+		}
 		fmt.Printf("Got error while modifying response: %v \n", err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		_, _ = rw.Write([]byte(err.Error()))
@@ -65,6 +71,10 @@ func NewProxyServer(options ProxyServerOptions) *ProxyServer {
 	return server
 }
 
+var (
+	regIntegrity = regexp.MustCompile(`\sintegrity="[^"]+"`)
+)
+
 func (p *ProxyServer) Handler() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		p.proxy.ServeHTTP(w, r)
@@ -72,13 +82,32 @@ func (p *ProxyServer) Handler() func(http.ResponseWriter, *http.Request) {
 }
 
 func (p *ProxyServer) modifyRequest(req *http.Request) {
+	target := *p.target
+	isProxyUrl := req.URL.Query().Get("forward_url") != ""
+
+	if isProxyUrl {
+		if unescapeUrl, err := url.QueryUnescape(strings.TrimLeft(req.URL.RawQuery, "forward_url=")); err == nil {
+			if u, err := url.Parse(unescapeUrl); err == nil {
+				if u.Scheme == "" {
+					u.Scheme = "http"
+				}
+				target = *u
+			}
+		}
+	}
+
 	req.Header.Set("X-Origin-Host", req.Host)
-	req.Host = p.target.Host
-	req.URL.Host = p.target.Host
-	req.URL.Scheme = p.target.Scheme
-	req.Header.Set("Host", p.target.Host)
-	req.Header.Set("Origin", fmt.Sprintf("%s://%s", p.target.Scheme, p.target.Host))
-	req.Header.Set("Referrer", fmt.Sprintf("%s://%s%s", p.target.Scheme, p.target.Host, req.URL.RawPath))
+	req.Host = target.Host
+	if isProxyUrl {
+		req.URL = &target
+	} else {
+		req.URL.Host = target.Host
+		req.URL.Scheme = target.Scheme
+	}
+
+	req.Header.Set("Host", target.Host)
+	req.Header.Set("Origin", fmt.Sprintf("%s://%s", target.Scheme, target.Host))
+	req.Header.Set("Referrer", fmt.Sprintf("%s://%s%s", target.Scheme, target.Host, req.URL.RawPath))
 	req.Header.Set("X-Real-IP", req.RemoteAddr)
 
 	for k := range p.reqHeaders {
@@ -86,18 +115,35 @@ func (p *ProxyServer) modifyRequest(req *http.Request) {
 	}
 }
 
-func (p *ProxyServer) modifyContent(body []byte, host string) []byte {
+func (p *ProxyServer) modifyContent(extNames []string, body []byte, originHost string, proxyHost string) []byte {
 	bodyStr := string(body)
 
-	bodyStr = replaceHost(bodyStr, p.target.Host, host)
+	bodyStr = replaceHost(bodyStr, originHost, proxyHost)
+
+	if contains(extNames, ".html") || contains(extNames, ".htm") || contains(extNames, ".xhtml") {
+		bodyStr = regIntegrity.ReplaceAllString(bodyStr, "")
+	}
 
 	return []byte(bodyStr)
 }
 
 func (p *ProxyServer) modifyResponse(res *http.Response) error {
-	host := res.Request.Header.Get("X-Origin-Host") // localhost:8080
+	target := *p.target
 
-	hostName, _, err := net.SplitHostPort(host)
+	if res.Request.URL.Query().Get("forward_url") != "" {
+		if unescapeUrl, err := url.QueryUnescape(strings.TrimLeft(res.Request.URL.RawQuery, "forward_url=")); err == nil {
+			if u, err := url.Parse(unescapeUrl); err == nil {
+				if u.Scheme == "" {
+					u.Scheme = "http"
+				}
+				target = *u
+			}
+		}
+	}
+
+	proxyHost := res.Request.Header.Get("X-Origin-Host") // localhost:8080
+
+	hostName, _, err := net.SplitHostPort(proxyHost)
 
 	if err != nil {
 		return err
@@ -105,6 +151,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 	res.Header.Set("X-Proxy-Client", "Forward-Cli")
 	res.Header.Del("Expect-CT")
+	res.Header.Del("Content-Security-Policy")
 
 	// overwrite cookies
 	{
@@ -125,7 +172,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 	{
 		for _, v := range res.Header["Location"] {
 			// replace location
-			newLocation := strings.Replace(v, fmt.Sprintf("%s://%s", p.target.Scheme, p.target.Host), "", -1)
+			newLocation := strings.Replace(v, fmt.Sprintf("%s://%s", target.Scheme, target.Host), "", -1)
 
 			res.Header.Set("Location", newLocation)
 		}
@@ -189,7 +236,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 				return err
 			}
 
-			newBody := p.modifyContent(body, host)
+			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
 
 			var b bytes.Buffer
 			gz := gzip.NewWriter(&b)
@@ -222,7 +269,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 				return err
 			}
 
-			newBody := p.modifyContent(body, host)
+			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
 
 			buf := &bytes.Buffer{}
 
@@ -249,7 +296,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 				return err
 			}
 
-			newBody := p.modifyContent(body, host)
+			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
 
 			buf := &bytes.Buffer{}
 			w := brotli.NewWriter(buf)
@@ -278,7 +325,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 			defer res.Body.Close()
 
-			newBody := p.modifyContent(body, host)
+			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
 
 			if err != nil {
 				return err

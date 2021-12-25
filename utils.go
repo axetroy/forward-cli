@@ -1,6 +1,7 @@
 package forward
 
 import (
+	"fmt"
 	"net/url"
 	"regexp"
 	"strings"
@@ -17,40 +18,40 @@ func contains(s []string, str string) bool {
 }
 
 var (
-	urlRegexp = regexp.MustCompile(`(((http|ws)s?:)?//)?(([\d\w]|%[a-fA-f\d]{2,2})+(:([\d\w]|%[a-fA-f\d]{2,2})+)?@)?([\d\w][-\d\w]{0,253}[\d\w]\.)+[\w]{2,63}(:[\d]+)?(/([-+_~.\d\w]|%[a-fA-f\d]{2,2})*)*(\?(&?([-+_~.\d\w]|%[a-fA-f\d]{2,2})=?)*)?(#([-+_~.\d\w]|%[a-fA-f\d]{2,2})*)?`)
+	urlRegexp = regexp.MustCompile(`(((http|ws)s?:)?//)(([\d\w]|%[a-fA-f\d]{2,2})+(:([\d\w]|%[a-fA-f\d]{2,2})+)?@)?([\d\w][-\d\w]{0,253}[\d\w]\.)+[\w]{2,63}(:[\d]+)?(/([-+_~.\d\w]|%[a-fA-f\d\d]{2,2})*)*(\?(&{0,}([-+_~.\d\w\;]|%[a-fA-f\d\;]{2,2})=?)*)?(#([-+_~.\d\w\;]|%[\;a-fA-f\d\;]{2,2})*)?`)
 )
 
-func replaceHost(content, origin, target string) string {
-	if !strings.HasPrefix(origin, "http") {
-		origin = "http://" + origin
+func replaceHost(content, oldHost, newHost string) string {
+	if !strings.HasPrefix(oldHost, "http") {
+		oldHost = "http://" + oldHost
 	}
-	if !strings.HasPrefix(target, "http") {
-		target = "http://" + target
+	if !strings.HasPrefix(newHost, "http") {
+		newHost = "http://" + newHost
 	}
 
 	newContent := content
 
-	t, err := url.Parse(target)
+	newHostUrl, err := url.Parse(newHost)
 
 	if err != nil {
 		panic(err)
 	}
 
-	o, err := url.Parse(origin)
+	oldHostUrl, err := url.Parse(oldHost)
 
 	if err != nil {
 		panic(err)
 	}
 
 	newContent = urlRegexp.ReplaceAllStringFunc(newContent, func(s string) string {
-		u, err := url.Parse(s)
+		matchUrl, err := url.Parse(s)
 
 		if err != nil {
 			return s
 		}
 
 		query := []string{}
-		queryArr := strings.Split(u.RawQuery, "&")
+		queryArr := strings.Split(matchUrl.RawQuery, "&")
 
 		for _, q := range queryArr {
 			arr := strings.Split(q, "=")
@@ -65,30 +66,31 @@ func replaceHost(content, origin, target string) string {
 				escapedValue := strings.Join(arr[1:], "=")
 
 				if unescapedValue, err := url.QueryUnescape(escapedValue); err == nil {
-					escapedValue = url.QueryEscape(replaceHost(unescapedValue, origin, target))
+					escapedValue = url.QueryEscape(replaceHost(unescapedValue, oldHost, newHost))
 				} else {
-					escapedValue = replaceHost(escapedValue, origin, target)
+					escapedValue = replaceHost(escapedValue, oldHost, newHost)
 				}
 
 				query = append(query, key+"="+escapedValue)
 			}
 		}
 
-		u.RawQuery = strings.Join(query, "&")
+		matchUrl.RawQuery = strings.Join(query, "&")
 
-		if u.Host != o.Host {
-			return u.String()
+		if matchUrl.Host != oldHostUrl.Host {
+			proxyUrl := fmt.Sprintf("%s://%s/?forward_url=%s", newHostUrl.Scheme, newHostUrl.Host, url.QueryEscape(matchUrl.String()))
+			return proxyUrl
 		}
 
-		if u.Scheme == "https" {
-			u.Scheme = "http"
-		} else if u.Scheme == "wss" {
-			u.Scheme = "ws"
+		if matchUrl.Scheme == "https" {
+			matchUrl.Scheme = "http"
+		} else if matchUrl.Scheme == "wss" {
+			matchUrl.Scheme = "ws"
 		}
 
-		u.Host = t.Host
+		matchUrl.Host = newHostUrl.Host
 
-		return u.String()
+		return matchUrl.String()
 	})
 
 	return newContent
