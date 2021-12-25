@@ -6,7 +6,7 @@
 
 ## forward-cli
 
-A command line tool to quickly setup a reverse proxy server.
+A command-line tool to reverse proxy any server. eg. Github/Google/Facebook and more.
 
 ### Usage
 
