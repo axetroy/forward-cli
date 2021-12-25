@@ -1,6 +1,6 @@
 builds:
   - binary: forward
-    main: ./main.go
+    main: ./cmd/forward/main.go
     goos:
       - windows
       - darwin

@@ -54,7 +54,7 @@ EXAMPLES:
 4. Build and install from source using [Golang](https://golang.org) (All platforms)
 
    ```bash
-   go install github.com/axetroy/forward-cli@latest
+   go install github.com/axetroy/forward-cli/cmd/forward@latest
    ```
 
 ### License
