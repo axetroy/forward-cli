@@ -59,7 +59,8 @@ func NewProxyServer(options ProxyServerOptions) *ProxyServer {
 	proxy.ModifyResponse = server.modifyResponse
 	proxy.ErrorHandler = func(rw http.ResponseWriter, r *http.Request, err error) {
 		fmt.Printf("Got error while modifying response: %v \n", err)
-		rw.Header().Set("X-Proxy-Error", err.Error())
+		rw.WriteHeader(http.StatusInternalServerError)
+		rw.Write([]byte(err.Error()))
 	}
 
 	return server
