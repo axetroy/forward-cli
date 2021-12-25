@@ -8,7 +8,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        go: ["1.18.0-beta1"]
+        go: ["1.17.5"]
         os: [ubuntu-latest, macOS-latest, windows-latest]
     name: Go ${{ matrix.go }} in ${{ matrix.os }}
     steps:
@@ -17,7 +17,6 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
-          stable: false
 
       - name: Environment
         run: |
@@ -54,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.18.0-beta1"]
+        go: ["1.17.5"]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -63,7 +62,6 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
-          stable: false
 
       - uses: axetroy/setup-whatchanged@v1
         with:
