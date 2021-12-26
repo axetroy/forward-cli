@@ -158,6 +158,14 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 	res.Header.Del("Expect-CT")
 	res.Header.Del("Content-Security-Policy")
 
+	// overwrite status code
+	{
+		// 301 -> 302
+		if res.StatusCode == http.StatusMovedPermanently {
+			res.StatusCode = http.StatusFound
+		}
+	}
+
 	// overwrite cookies
 	{
 		cookies := res.Cookies()
