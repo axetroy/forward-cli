@@ -50,7 +50,7 @@ func replaceHost(content, oldHost, newHost string) string {
 			return s
 		}
 
-		if !contains([]string{"http", "https", "ws", "wss"}, matchUrl.Scheme) {
+		if !contains([]string{"http", "https", "ws", "wss"}, matchUrl.Scheme) && !strings.HasPrefix(s, "//") {
 			return s
 		}
 
@@ -82,7 +82,7 @@ func replaceHost(content, oldHost, newHost string) string {
 		matchUrl.RawQuery = strings.Join(query, "&")
 
 		if matchUrl.Host != oldHostUrl.Host {
-			if contains([]string{"http", "https"}, matchUrl.Scheme) {
+			if contains([]string{"http", "https"}, matchUrl.Scheme) || strings.HasPrefix(s, "//") {
 				return fmt.Sprintf("%s://%s/?forward_url=%s", newHostUrl.Scheme, newHostUrl.Host, url.QueryEscape(matchUrl.String()))
 			} else if contains([]string{"ws", "wss"}, matchUrl.Scheme) {
 				return fmt.Sprintf("%s://%s/?forward_url=%s", "ws", newHostUrl.Host, url.QueryEscape(matchUrl.String()))
