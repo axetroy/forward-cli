@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -18,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/andybalholm/brotli"
+	"github.com/pkg/errors"
 )
 
 type ProxyServer struct {
@@ -63,9 +63,10 @@ func NewProxyServer(options ProxyServerOptions) *ProxyServer {
 		if errors.Is(err, context.Canceled) {
 			return
 		}
-		fmt.Printf("Got error while modifying response: %v \n", err)
+		msg := fmt.Sprintf("%+v\n", err)
+		fmt.Println(msg)
 		rw.WriteHeader(http.StatusInternalServerError)
-		_, _ = rw.Write([]byte(err.Error()))
+		_, _ = rw.Write([]byte(msg))
 	}
 
 	return server
@@ -141,12 +142,16 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 		}
 	}
 
-	proxyHost := res.Request.Header.Get("X-Origin-Host") // localhost:8080
+	proxyHost := res.Request.Header.Get("X-Origin-Host") // localhost:8080 or localhost
 
 	hostName, _, err := net.SplitHostPort(proxyHost)
 
 	if err != nil {
-		return err
+		if strings.Contains(err.Error(), "missing port in address") {
+			hostName = proxyHost
+		} else {
+			return errors.WithStack(err)
+		}
 	}
 
 	res.Header.Set("X-Proxy-Client", "Forward-Cli")
@@ -225,7 +230,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 			reader, err := gzip.NewReader(res.Body)
 
 			if err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 
 			defer reader.Close()
@@ -233,7 +238,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 			body, err := ioutil.ReadAll(reader)
 
 			if err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 
 			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
@@ -242,11 +247,11 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 			gz := gzip.NewWriter(&b)
 
 			if _, err := gz.Write(newBody); err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 
 			if err := gz.Close(); err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 
 			bin := b.Bytes()
@@ -258,7 +263,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 			reader, err := zlib.NewReader(res.Body)
 
 			if err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 
 			body, err := ioutil.ReadAll(reader)
@@ -266,7 +271,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 			defer reader.Close()
 
 			if err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 
 			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
@@ -276,13 +281,13 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 			w := zlib.NewWriter(buf)
 
 			if n, err := w.Write(newBody); err != nil {
-				return err
+				return errors.WithStack(err)
 			} else if n < len(newBody) {
 				return fmt.Errorf("n too small: %d vs %d for %s", n, len(newBody), string(newBody))
 			}
 
 			if err := w.Close(); err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 
 			res.Header.Set("Content-Length", fmt.Sprint(buf.Len()))
@@ -293,7 +298,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 			body, err := ioutil.ReadAll(reader)
 
 			if err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 
 			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
@@ -301,13 +306,13 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 			buf := &bytes.Buffer{}
 			w := brotli.NewWriter(buf)
 			if n, err := w.Write(newBody); err != nil {
-				return err
+				return errors.WithStack(err)
 			} else if n < len(newBody) {
 				return fmt.Errorf("n too small: %d vs %d for %s", n, len(newBody), string(newBody))
 			}
 
 			if err := w.Close(); err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 
 			res.Header.Set("Content-Length", fmt.Sprint(buf.Len()))
@@ -320,7 +325,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 			body, err := ioutil.ReadAll(res.Body)
 
 			if err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 
 			defer res.Body.Close()
@@ -328,7 +333,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
 
 			if err != nil {
-				return err
+				return errors.WithStack(err)
 			}
 
 			res.Header.Set("Content-Length", fmt.Sprint(len(newBody)))
