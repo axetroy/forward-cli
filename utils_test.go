@@ -5,8 +5,8 @@ import "testing"
 func Test_replaceHost(t *testing.T) {
 	type args struct {
 		content string
-		origin  string
-		target  string
+		oldHost string
+		newHost string
 	}
 	tests := []struct {
 		name string
@@ -17,8 +17,8 @@ func Test_replaceHost(t *testing.T) {
 			name: "1",
 			args: args{
 				content: "https://example.com",
-				origin:  "example.com",
-				target:  "localhost:8080",
+				oldHost: "example.com",
+				newHost: "localhost:8080",
 			},
 			want: "http://localhost:8080",
 		},
@@ -26,8 +26,8 @@ func Test_replaceHost(t *testing.T) {
 			name: "2",
 			args: args{
 				content: "https://example.com.hk",
-				origin:  "example.com",
-				target:  "localhost:8080",
+				oldHost: "example.com",
+				newHost: "localhost:8080",
 			},
 			want: "http://localhost:8080/?forward_url=https%3A%2F%2Fexample.com.hk",
 		},
@@ -35,8 +35,8 @@ func Test_replaceHost(t *testing.T) {
 			name: "3",
 			args: args{
 				content: "https://example.com/demo",
-				origin:  "example.com",
-				target:  "localhost:8080",
+				oldHost: "example.com",
+				newHost: "localhost:8080",
 			},
 			want: "http://localhost:8080/demo",
 		},
@@ -44,8 +44,8 @@ func Test_replaceHost(t *testing.T) {
 			name: "4",
 			args: args{
 				content: "https://example.com.hk/demo",
-				origin:  "example.com",
-				target:  "localhost:8080",
+				oldHost: "example.com",
+				newHost: "localhost:8080",
 			},
 			want: "http://localhost:8080/?forward_url=https%3A%2F%2Fexample.com.hk%2Fdemo",
 		},
@@ -53,8 +53,8 @@ func Test_replaceHost(t *testing.T) {
 			name: "5",
 			args: args{
 				content: "//example.com/demo",
-				origin:  "example.com",
-				target:  "localhost:8080",
+				oldHost: "example.com",
+				newHost: "localhost:8080",
 			},
 			want: "//localhost:8080/demo",
 		},
@@ -62,8 +62,8 @@ func Test_replaceHost(t *testing.T) {
 			name: "6",
 			args: args{
 				content: "//www.baidu.com/s?wd=&%E7%99%BE%E5%BA%A6%E7%83%AD%E6%90%9C&sa=&ire_dl_gh_logo_texing&rsv_dl=&igh_logo_pcs",
-				origin:  "www.baidu.com",
-				target:  "localhost:8080",
+				oldHost: "www.baidu.com",
+				newHost: "localhost:8080",
 			},
 			want: "//localhost:8080/s?wd=&%E7%99%BE%E5%BA%A6%E7%83%AD%E6%90%9C&sa=&ire_dl_gh_logo_texing&rsv_dl=&igh_logo_pcs",
 		},
@@ -71,15 +71,15 @@ func Test_replaceHost(t *testing.T) {
 			name: "7",
 			args: args{
 				content: "https://passport.baidu.com/v2/?login&tpl=mn&u=http%3A%2F%2Fwww.baidu.com%2F",
-				origin:  "www.baidu.com",
-				target:  "localhost:8080",
+				oldHost: "www.baidu.com",
+				newHost: "localhost:8080",
 			},
 			want: "http://localhost:8080/?forward_url=https%3A%2F%2Fpassport.baidu.com%2Fv2%2F%3Flogin%26tpl%3Dmn%26u%3Dhttp%253A%252F%252Flocalhost%253A8080%252F",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := replaceHost(tt.args.content, tt.args.origin, tt.args.target); got != tt.want {
+			if got := replaceHost(tt.args.content, tt.args.oldHost, tt.args.newHost); got != tt.want {
 				t.Errorf("replaceHost() = %v, want %v", got, tt.want)
 			}
 		})
