@@ -21,6 +21,10 @@ var (
 	urlRegexp = regexp.MustCompile(`(((http|ws)s?:)?//)(([\d\w]|%[a-fA-f\d]{2,2})+(:([\d\w]|%[a-fA-f\d]{2,2})+)?@)?([\d\w][-\d\w]{0,253}[\d\w]\.)+[\w]{2,63}(:[\d]+)?(/([-+_~.\d\w]|%[a-fA-f\d\d]{2,2})*)*(\?(&{0,}([-+_~.\d\w\;]|%[a-fA-f\d\;]{2,2})=?)*)?(#([-+_~.\d\w\;]|%[\;a-fA-f\d\;]{2,2})*)?`)
 )
 
+func isHttpUrl(u string) bool {
+	return regexp.MustCompile(`^https?:\/\/`).MatchString(u)
+}
+
 func replaceHost(content, oldHost, newHost string) string {
 	if !strings.HasPrefix(oldHost, "http") {
 		oldHost = "http://" + oldHost

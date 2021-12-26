@@ -21,6 +21,7 @@ import (
 )
 
 type ProxyServer struct {
+	useSSL            bool
 	target            *url.URL
 	reqHeaders        http.Header
 	resHeaders        http.Header
@@ -32,6 +33,7 @@ type ProxyServer struct {
 
 type ProxyServerOptions struct {
 	Target            *url.URL
+	UseSSL            bool
 	ReqHeaders        http.Header
 	ResHeaders        http.Header
 	Cors              bool
@@ -90,7 +92,11 @@ func (p *ProxyServer) modifyRequest(req *http.Request) {
 		if unescapeUrl, err := url.QueryUnescape(strings.TrimLeft(req.URL.RawQuery, "forward_url=")); err == nil {
 			if u, err := url.Parse(unescapeUrl); err == nil {
 				if u.Scheme == "" {
-					u.Scheme = "http"
+					if p.useSSL {
+						u.Scheme = "https"
+					} else {
+						u.Scheme = "http"
+					}
 				}
 				target = *u
 			}
@@ -130,11 +136,14 @@ func (p *ProxyServer) modifyContent(extNames []string, body []byte, originHost s
 
 func (p *ProxyServer) modifyResponse(res *http.Response) error {
 	target := *p.target
+	isProxyUrl := res.Request.URL.Query().Get("forward_url") != ""
 
-	if res.Request.URL.Query().Get("forward_url") != "" {
+	if isProxyUrl {
 		if unescapeUrl, err := url.QueryUnescape(strings.TrimLeft(res.Request.URL.RawQuery, "forward_url=")); err == nil {
 			if u, err := url.Parse(unescapeUrl); err == nil {
-				if u.Scheme == "" {
+				if p.useSSL {
+					u.Scheme = "https"
+				} else {
 					u.Scheme = "http"
 				}
 				target = *u
@@ -183,11 +192,21 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 	// overrit 302 Location
 	{
+		// https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Location
 		for _, v := range res.Header["Location"] {
-			// replace location
-			newLocation := strings.Replace(v, fmt.Sprintf("%s://%s", target.Scheme, target.Host), "", -1)
 
-			res.Header.Set("Location", newLocation)
+			// // relative path
+			if !isHttpUrl(v) {
+				if isProxyUrl {
+					newLocation := target
+					newLocation.Path = v
+					res.Header.Set("Location", newLocation.String())
+				}
+			} else {
+				newLocation := replaceHost(v, target.Host, proxyHost)
+				res.Header.Set("Location", newLocation)
+			}
+
 		}
 	}
 
