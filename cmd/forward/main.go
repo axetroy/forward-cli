@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,6 +18,20 @@ var (
 	commit  = "none"
 	date    = "unknown"
 )
+
+func getLocalIP() net.IP {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+
+	if err != nil {
+		return []byte("0.0.0.0")
+	}
+
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP
+}
 
 func printHelp() {
 	println(`forward - A command line tool to quickly setup a reverse proxy server.
@@ -142,13 +157,7 @@ func main() {
 
 	http.HandleFunc("/", proxy.Handler())
 
-	ip, err := forward.GetLocalIP()
-
-	if err != nil {
-		log.Panicln(err)
-	}
-
-	log.Printf("Proxy 'http://%s:%s' to '%s'\n", ip, port, target)
+	log.Printf("Proxy 'http://%s:%s' to '%s'\n", getLocalIP(), port, target)
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
 }
