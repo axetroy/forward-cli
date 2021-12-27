@@ -20,7 +20,20 @@ func contains(s []string, str string) bool {
 }
 
 var (
-	urlRegexp *regexp.Regexp
+	urlRegexp              *regexp.Regexp
+	rewriteContentExtNames = map[string]struct{}{
+		".html":  {},
+		".htm":   {},
+		".xhtml": {},
+		".xml":   {},
+		".yml":   {},
+		".yaml":  {},
+		".css":   {},
+		".js":    {},
+		".txt":   {},
+		".text":  {},
+		".json":  {},
+	}
 )
 
 func init() {
@@ -33,6 +46,15 @@ func init() {
 
 func isHttpUrl(u string) bool {
 	return regexp.MustCompile(`^https?:\/\/`).MatchString(u)
+}
+
+func isShouldReplaceContent(extName []string) bool {
+	for _, extName := range extName {
+		if _, ok := rewriteContentExtNames[extName]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func replaceHost(content, oldHost, newHost string, proxyExternal bool, proxyExternalIgnores []string) string {

@@ -216,23 +216,13 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 	{
 		contentType := res.Header.Get("Content-Type")
 
-		ext, err := mime.ExtensionsByType(contentType)
+		extNames, err := mime.ExtensionsByType(contentType)
 
 		if err != nil {
 			return nil
 		}
 
-		replaceExtNames := []string{".html", ".htm", ".xhtml", ".xml", ".yml", ".yaml", ".css", ".js", ".txt", ".text", ".json"}
-		isSupportReplace := false
-
-		for _, v := range replaceExtNames {
-			if contains(ext, v) {
-				isSupportReplace = true
-				break
-			}
-		}
-
-		if !isSupportReplace {
+		if !isShouldReplaceContent(extNames) {
 			return nil
 		}
 
@@ -255,7 +245,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 				return errors.WithStack(err)
 			}
 
-			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
+			newBody := p.modifyContent(extNames, body, target.Host, proxyHost)
 
 			if p.Compress {
 				var b bytes.Buffer
@@ -295,7 +285,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 				return errors.WithStack(err)
 			}
 
-			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
+			newBody := p.modifyContent(extNames, body, target.Host, proxyHost)
 
 			if p.Compress {
 				buf := &bytes.Buffer{}
@@ -328,7 +318,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 				return errors.WithStack(err)
 			}
 
-			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
+			newBody := p.modifyContent(extNames, body, target.Host, proxyHost)
 
 			if p.Compress {
 				buf := &bytes.Buffer{}
@@ -363,7 +353,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 			defer res.Body.Close()
 
-			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
+			newBody := p.modifyContent(extNames, body, target.Host, proxyHost)
 
 			if err != nil {
 				return errors.WithStack(err)
