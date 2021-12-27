@@ -20,6 +20,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+var (
+	regIntegrity = regexp.MustCompile(`\sintegrity="[^"]+"`)
+)
+
 type ProxyServer struct {
 	useSSL               bool
 	target               *url.URL
@@ -27,22 +31,20 @@ type ProxyServer struct {
 	resHeaders           http.Header
 	proxyExternal        bool
 	proxyExternalIgnores []string
+	compress             bool
 	cors                 bool
-	corsAllowHeaders     string
-	corsExposeHeaders    string
 	proxy                *httputil.ReverseProxy
 }
 
 type ProxyServerOptions struct {
-	Target               *url.URL
-	UseSSL               bool
-	ReqHeaders           http.Header
-	ResHeaders           http.Header
-	ProxyExternal        bool
-	ProxyExternalIgnores []string // the host name that should ignore when enable proxy external
-	Cors                 bool
-	CorsAllowHeaders     string
-	CorsExposeHeaders    string
+	Target               *url.URL    // proxy target
+	Compress             bool        // whether keep compress from target response
+	UseSSL               bool        // use SSL
+	ReqHeaders           http.Header // set request headers
+	ResHeaders           http.Header // set response headers
+	ProxyExternal        bool        // whether to proxy external host
+	ProxyExternalIgnores []string    // the host name that should ignore when enable proxy external
+	Cors                 bool        // whether enable cors
 }
 
 func NewProxyServer(options ProxyServerOptions) *ProxyServer {
@@ -54,8 +56,7 @@ func NewProxyServer(options ProxyServerOptions) *ProxyServer {
 		proxyExternal:        options.ProxyExternal,
 		proxyExternalIgnores: options.ProxyExternalIgnores,
 		cors:                 options.Cors,
-		corsAllowHeaders:     options.CorsAllowHeaders,
-		corsExposeHeaders:    options.CorsExposeHeaders,
+		compress:             options.Compress,
 		target:               options.Target,
 		proxy:                proxy,
 	}
@@ -79,10 +80,6 @@ func NewProxyServer(options ProxyServerOptions) *ProxyServer {
 
 	return server
 }
-
-var (
-	regIntegrity = regexp.MustCompile(`\sintegrity="[^"]+"`)
-)
 
 func (p *ProxyServer) Handler() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -222,12 +219,6 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 	if p.cors {
 		res.Header.Set("Access-Control-Allow-Origin", "*")
 		res.Header.Set("Access-Control-Allow-Credentials", "true")
-		if p.corsAllowHeaders != "" {
-			res.Header.Add("Access-Control-Allow-Headers", p.corsAllowHeaders)
-		}
-		if p.corsExposeHeaders != "" {
-			res.Header.Add("Access-Control-Expose-Headers", p.corsExposeHeaders)
-		}
 	}
 
 	for k := range p.resHeaders {
@@ -279,20 +270,27 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
 
-			var b bytes.Buffer
-			gz := gzip.NewWriter(&b)
+			if p.compress {
+				var b bytes.Buffer
+				gz := gzip.NewWriter(&b)
 
-			if _, err := gz.Write(newBody); err != nil {
-				return errors.WithStack(err)
+				if _, err := gz.Write(newBody); err != nil {
+					return errors.WithStack(err)
+				}
+
+				if err := gz.Close(); err != nil {
+					return errors.WithStack(err)
+				}
+
+				bin := b.Bytes()
+				res.Header.Set("Content-Length", fmt.Sprint(len(bin)))
+				res.Body = io.NopCloser(bytes.NewReader(bin))
+			} else {
+				res.Header.Set("Content-Length", fmt.Sprint(len(newBody)))
+				res.Header.Set("Content-Encoding", "identity")
+				res.Body = io.NopCloser(bytes.NewReader(newBody))
 			}
 
-			if err := gz.Close(); err != nil {
-				return errors.WithStack(err)
-			}
-
-			bin := b.Bytes()
-			res.Header.Set("Content-Length", fmt.Sprint(len(bin)))
-			res.Body = io.NopCloser(bytes.NewReader(bin))
 		case "compress":
 			// Deprecated by most browsers
 		case "deflate":
@@ -312,22 +310,28 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
 
-			buf := &bytes.Buffer{}
+			if p.compress {
+				buf := &bytes.Buffer{}
 
-			w := zlib.NewWriter(buf)
+				w := zlib.NewWriter(buf)
 
-			if n, err := w.Write(newBody); err != nil {
-				return errors.WithStack(err)
-			} else if n < len(newBody) {
-				return fmt.Errorf("n too small: %d vs %d for %s", n, len(newBody), string(newBody))
+				if n, err := w.Write(newBody); err != nil {
+					return errors.WithStack(err)
+				} else if n < len(newBody) {
+					return fmt.Errorf("n too small: %d vs %d for %s", n, len(newBody), string(newBody))
+				}
+
+				if err := w.Close(); err != nil {
+					return errors.WithStack(err)
+				}
+
+				res.Header.Set("Content-Length", fmt.Sprint(buf.Len()))
+				res.Body = io.NopCloser(buf)
+			} else {
+				res.Header.Set("Content-Length", fmt.Sprint(len(newBody)))
+				res.Header.Set("Content-Encoding", "identity")
+				res.Body = io.NopCloser(bytes.NewReader(newBody))
 			}
-
-			if err := w.Close(); err != nil {
-				return errors.WithStack(err)
-			}
-
-			res.Header.Set("Content-Length", fmt.Sprint(buf.Len()))
-			res.Body = io.NopCloser(buf)
 		case "br":
 			reader := brotli.NewReader(res.Body)
 
@@ -339,20 +343,26 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
 
-			buf := &bytes.Buffer{}
-			w := brotli.NewWriter(buf)
-			if n, err := w.Write(newBody); err != nil {
-				return errors.WithStack(err)
-			} else if n < len(newBody) {
-				return fmt.Errorf("n too small: %d vs %d for %s", n, len(newBody), string(newBody))
-			}
+			if p.compress {
+				buf := &bytes.Buffer{}
+				w := brotli.NewWriter(buf)
+				if n, err := w.Write(newBody); err != nil {
+					return errors.WithStack(err)
+				} else if n < len(newBody) {
+					return fmt.Errorf("n too small: %d vs %d for %s", n, len(newBody), string(newBody))
+				}
 
-			if err := w.Close(); err != nil {
-				return errors.WithStack(err)
-			}
+				if err := w.Close(); err != nil {
+					return errors.WithStack(err)
+				}
 
-			res.Header.Set("Content-Length", fmt.Sprint(buf.Len()))
-			res.Body = io.NopCloser(buf)
+				res.Header.Set("Content-Length", fmt.Sprint(buf.Len()))
+				res.Body = io.NopCloser(buf)
+			} else {
+				res.Header.Set("Content-Length", fmt.Sprint(len(newBody)))
+				res.Header.Set("Content-Encoding", "identity")
+				res.Body = io.NopCloser(bytes.NewReader(newBody))
+			}
 		case "identity":
 			fallthrough
 		default:

@@ -20,19 +20,18 @@ OPTIONS:
   --help                              print help information
   --version                           show version information
   --port="<int>"                      specify the port that the proxy server listens on. defaults: 80
-  --proxy-external                    Specify whether to proxy an address outside the host. defaults: false
-  --proxy-external-ignore=<host>      Specify the external host without using a proxy. defaults: ""
+  --compress                          whether keep compress from target response, set to true may slowdown response. defaults: false
+  --proxy-external                    whether to proxy external host. defaults: false
+  --proxy-external-ignore=<host>      specify the external host without using a proxy. defaults: ""
   --req-header="key=value"            specify the request header attached to the request. defaults: ""
   --res-header="key=value"            specify the response headers. defaults: ""
-  --cors                              enable cors. defaults: false
-  --cors-allow-headers="<string>"     allow send headers from client when cors enabled. defaults: ""
-  --cors-expose-headers="<string>"    expose response headers from server when cors enabled. defaults: ""
+  --cors                              whether enable cors. defaults: false
 
 EXAMPLES:
   forward http://example.com
   forward --port=80 http://example.com
   forward --req-header="foo=bar" http://example.com
-  forward --cors --cors-allow-headers="Auth, Token" http://example.com
+  forward --cors --req-header="foo=bar" --req-header="hello=world" http://example.com
 ```
 
 ### Install
