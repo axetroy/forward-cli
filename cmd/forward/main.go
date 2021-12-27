@@ -145,7 +145,7 @@ func main() {
 		responseHeaders.Set(arr[0], strings.Join(arr[1:], "="))
 	}
 
-	proxy := forward.NewProxyServer(forward.ProxyServerOptions{
+	proxy := forward.NewProxyServer(&forward.ProxyServerOptions{
 		ReqHeaders:           requestHeaders,
 		ResHeaders:           responseHeaders,
 		Compress:             compress,

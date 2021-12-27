@@ -25,15 +25,8 @@ var (
 )
 
 type ProxyServer struct {
-	useSSL               bool
-	target               *url.URL
-	reqHeaders           http.Header
-	resHeaders           http.Header
-	proxyExternal        bool
-	proxyExternalIgnores []string
-	compress             bool
-	cors                 bool
-	proxy                *httputil.ReverseProxy
+	*ProxyServerOptions
+	proxy *httputil.ReverseProxy
 }
 
 type ProxyServerOptions struct {
@@ -47,18 +40,12 @@ type ProxyServerOptions struct {
 	Cors                 bool        // whether enable cors
 }
 
-func NewProxyServer(options ProxyServerOptions) *ProxyServer {
+func NewProxyServer(options *ProxyServerOptions) *ProxyServer {
 	proxy := httputil.NewSingleHostReverseProxy(options.Target)
 
 	server := &ProxyServer{
-		reqHeaders:           options.ReqHeaders,
-		resHeaders:           options.ResHeaders,
-		proxyExternal:        options.ProxyExternal,
-		proxyExternalIgnores: options.ProxyExternalIgnores,
-		cors:                 options.Cors,
-		compress:             options.Compress,
-		target:               options.Target,
-		proxy:                proxy,
+		options,
+		proxy,
 	}
 
 	originalDirector := proxy.Director
@@ -88,14 +75,14 @@ func (p *ProxyServer) Handler() func(http.ResponseWriter, *http.Request) {
 }
 
 func (p *ProxyServer) modifyRequest(req *http.Request) {
-	target := *p.target
+	target := *p.Target
 	isProxyUrl := req.URL.Query().Get("forward_url") != ""
 
 	if isProxyUrl {
 		if unescapeUrl, err := url.QueryUnescape(strings.TrimLeft(req.URL.RawQuery, "forward_url=")); err == nil {
 			if u, err := url.Parse(unescapeUrl); err == nil {
 				if u.Scheme == "" {
-					if p.useSSL {
+					if p.UseSSL {
 						u.Scheme = "https"
 					} else {
 						u.Scheme = "http"
@@ -120,15 +107,15 @@ func (p *ProxyServer) modifyRequest(req *http.Request) {
 	req.Header.Set("Referrer", fmt.Sprintf("%s://%s%s", target.Scheme, target.Host, req.URL.RawPath))
 	req.Header.Set("X-Real-IP", req.RemoteAddr)
 
-	for k := range p.reqHeaders {
-		req.Header.Add(k, p.reqHeaders.Get(k))
+	for k := range p.ReqHeaders {
+		req.Header.Add(k, p.ReqHeaders.Get(k))
 	}
 }
 
 func (p *ProxyServer) modifyContent(extNames []string, body []byte, originHost string, proxyHost string) []byte {
 	bodyStr := string(body)
 
-	bodyStr = replaceHost(bodyStr, originHost, proxyHost, p.proxyExternal, p.proxyExternalIgnores)
+	bodyStr = replaceHost(bodyStr, originHost, proxyHost, p.ProxyExternal, p.ProxyExternalIgnores)
 
 	// https://developer.mozilla.org/zh-CN/docs/Web/Security/Subresource_Integrity
 	if contains(extNames, ".html") || contains(extNames, ".htm") || contains(extNames, ".xhtml") {
@@ -139,13 +126,13 @@ func (p *ProxyServer) modifyContent(extNames []string, body []byte, originHost s
 }
 
 func (p *ProxyServer) modifyResponse(res *http.Response) error {
-	target := *p.target
+	target := *p.Target
 	isProxyUrl := res.Request.URL.Query().Get("forward_url") != ""
 
 	if isProxyUrl {
 		if unescapeUrl, err := url.QueryUnescape(strings.TrimLeft(res.Request.URL.RawQuery, "forward_url=")); err == nil {
 			if u, err := url.Parse(unescapeUrl); err == nil {
-				if p.useSSL {
+				if p.UseSSL {
 					u.Scheme = "https"
 				} else {
 					u.Scheme = "http"
@@ -209,20 +196,20 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 					res.Header.Set("Location", newLocation.String())
 				}
 			} else {
-				newLocation := replaceHost(v, target.Host, proxyHost, p.proxyExternal, p.proxyExternalIgnores)
+				newLocation := replaceHost(v, target.Host, proxyHost, p.ProxyExternal, p.ProxyExternalIgnores)
 				res.Header.Set("Location", newLocation)
 			}
 
 		}
 	}
 
-	if p.cors {
+	if p.Cors {
 		res.Header.Set("Access-Control-Allow-Origin", "*")
 		res.Header.Set("Access-Control-Allow-Credentials", "true")
 	}
 
-	for k := range p.resHeaders {
-		res.Header.Add(k, p.resHeaders.Get(k))
+	for k := range p.ResHeaders {
+		res.Header.Add(k, p.ResHeaders.Get(k))
 	}
 
 	// replace HTML/css/javascript content
@@ -270,7 +257,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
 
-			if p.compress {
+			if p.Compress {
 				var b bytes.Buffer
 				gz := gzip.NewWriter(&b)
 
@@ -310,7 +297,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
 
-			if p.compress {
+			if p.Compress {
 				buf := &bytes.Buffer{}
 
 				w := zlib.NewWriter(buf)
@@ -343,7 +330,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 			newBody := p.modifyContent(ext, body, target.Host, proxyHost)
 
-			if p.compress {
+			if p.Compress {
 				buf := &bytes.Buffer{}
 				w := brotli.NewWriter(buf)
 				if n, err := w.Write(newBody); err != nil {
