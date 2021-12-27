@@ -23,6 +23,15 @@ func Test_replaceHost(t *testing.T) {
 			want: "http://localhost:8080",
 		},
 		{
+			name: "1.1",
+			args: args{
+				content: "http://192.168.0.7:8443/webfolder/index.action",
+				oldHost: "192.168.0.7:8443",
+				newHost: "192.168.4.22:80",
+			},
+			want: "http://192.168.4.22:80/webfolder/index.action",
+		},
+		{
 			name: "2",
 			args: args{
 				content: "https://example.com.hk",

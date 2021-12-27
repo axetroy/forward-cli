@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	xurls "mvdan.cc/xurls/v2"
 )
 
 func contains(s []string, str string) bool {
@@ -18,8 +20,16 @@ func contains(s []string, str string) bool {
 }
 
 var (
-	urlRegexp = regexp.MustCompile(`(((http|ws)s?:)?//)(([\d\w]|%[a-fA-f\d]{2,2})+(:([\d\w]|%[a-fA-f\d]{2,2})+)?@)?([\d\w][-\d\w]{0,253}[\d\w]\.)+[\w]{2,63}(:[\d]+)?(/([-+_~.\d\w]|%[a-fA-f\d\d]{2,2})*)*(\?(&{0,}([-+_~.\d\w\;]|%[a-fA-f\d\;]{2,2})=?)*)?(#([-+_~.\d\w\;]|%[\;a-fA-f\d\;]{2,2})*)?`)
+	urlRegexp *regexp.Regexp
 )
+
+func init() {
+	if u, err := xurls.StrictMatchingScheme("https?://|wss?://"); err != nil {
+		panic(err)
+	} else {
+		urlRegexp = u
+	}
+}
 
 func isHttpUrl(u string) bool {
 	return regexp.MustCompile(`^https?:\/\/`).MatchString(u)
@@ -51,10 +61,6 @@ func replaceHost(content, oldHost, newHost string) string {
 		matchUrl, err := url.Parse(s)
 
 		if err != nil {
-			return s
-		}
-
-		if !contains([]string{"http", "https", "ws", "wss"}, matchUrl.Scheme) && !strings.HasPrefix(s, "//") {
 			return s
 		}
 
@@ -105,6 +111,8 @@ func replaceHost(content, oldHost, newHost string) string {
 
 		return matchUrl.String()
 	})
+
+	newContent = strings.ReplaceAll(newContent, "//"+oldHostUrl.Host, "//"+newHostUrl.Host)
 
 	return newContent
 }

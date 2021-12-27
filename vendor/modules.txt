@@ -4,3 +4,6 @@ github.com/andybalholm/brotli
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# mvdan.cc/xurls/v2 v2.3.0
+## explicit; go 1.15
+mvdan.cc/xurls/v2
