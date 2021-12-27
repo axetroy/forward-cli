@@ -28,6 +28,8 @@ OPTIONS:
   --help                              print help information
   --version                           show version information
   --port="<int>"                      specify the port that the proxy server listens on. defaults: 80
+  --proxy-external                    Specify whether to proxy an address outside the host. defaults: false
+  --proxy-external-ignore=<host>      Specify the external host without using a proxy. defaults: ""
   --req-header="key=value"            specify the request header attached to the request. defaults: ""
   --res-header="key=value"            specify the response headers. defaults: ""
   --cors                              enable cors. defaults: false
@@ -57,6 +59,8 @@ func main() {
 		showHelp             bool
 		showVersion          bool
 		cors                 bool
+		proxyExternal        bool
+		proxyExternalIgnores arrayFlags
 		corsAllowHeaders     string
 		corsExposeHeaders    string
 		requestHeadersArray  arrayFlags
@@ -77,6 +81,8 @@ func main() {
 	flag.Var(&requestHeadersArray, "req-header", "")
 	flag.Var(&responseHeadersArray, "res-header", "")
 	flag.BoolVar(&cors, "cors", false, "")
+	flag.BoolVar(&proxyExternal, "proxy-external", false, "")
+	flag.Var(&proxyExternalIgnores, "proxy-external-ignore", "")
 	flag.StringVar(&corsAllowHeaders, "cors-allow-headers", corsAllowHeaders, "")
 	flag.StringVar(&corsExposeHeaders, "cors-expose-headers", corsExposeHeaders, "")
 	flag.StringVar(&port, "port", port, "")
@@ -128,12 +134,14 @@ func main() {
 	}
 
 	proxy := forward.NewProxyServer(forward.ProxyServerOptions{
-		ReqHeaders:        requestHeaders,
-		ResHeaders:        responseHeaders,
-		Cors:              cors,
-		CorsAllowHeaders:  corsAllowHeaders,
-		CorsExposeHeaders: corsExposeHeaders,
-		Target:            u,
+		ReqHeaders:           requestHeaders,
+		ResHeaders:           responseHeaders,
+		Cors:                 cors,
+		ProxyExternal:        proxyExternal,
+		ProxyExternalIgnores: proxyExternalIgnores,
+		CorsAllowHeaders:     corsAllowHeaders,
+		CorsExposeHeaders:    corsExposeHeaders,
+		Target:               u,
 	})
 
 	http.HandleFunc("/", proxy.Handler())

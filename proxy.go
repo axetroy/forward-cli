@@ -21,37 +21,43 @@ import (
 )
 
 type ProxyServer struct {
-	useSSL            bool
-	target            *url.URL
-	reqHeaders        http.Header
-	resHeaders        http.Header
-	cors              bool
-	corsAllowHeaders  string
-	corsExposeHeaders string
-	proxy             *httputil.ReverseProxy
+	useSSL               bool
+	target               *url.URL
+	reqHeaders           http.Header
+	resHeaders           http.Header
+	proxyExternal        bool
+	proxyExternalIgnores []string
+	cors                 bool
+	corsAllowHeaders     string
+	corsExposeHeaders    string
+	proxy                *httputil.ReverseProxy
 }
 
 type ProxyServerOptions struct {
-	Target            *url.URL
-	UseSSL            bool
-	ReqHeaders        http.Header
-	ResHeaders        http.Header
-	Cors              bool
-	CorsAllowHeaders  string
-	CorsExposeHeaders string
+	Target               *url.URL
+	UseSSL               bool
+	ReqHeaders           http.Header
+	ResHeaders           http.Header
+	ProxyExternal        bool
+	ProxyExternalIgnores []string // the host name that should ignore when enable proxy external
+	Cors                 bool
+	CorsAllowHeaders     string
+	CorsExposeHeaders    string
 }
 
 func NewProxyServer(options ProxyServerOptions) *ProxyServer {
 	proxy := httputil.NewSingleHostReverseProxy(options.Target)
 
 	server := &ProxyServer{
-		reqHeaders:        options.ReqHeaders,
-		resHeaders:        options.ResHeaders,
-		cors:              options.Cors,
-		corsAllowHeaders:  options.CorsAllowHeaders,
-		corsExposeHeaders: options.CorsExposeHeaders,
-		target:            options.Target,
-		proxy:             proxy,
+		reqHeaders:           options.ReqHeaders,
+		resHeaders:           options.ResHeaders,
+		proxyExternal:        options.ProxyExternal,
+		proxyExternalIgnores: options.ProxyExternalIgnores,
+		cors:                 options.Cors,
+		corsAllowHeaders:     options.CorsAllowHeaders,
+		corsExposeHeaders:    options.CorsExposeHeaders,
+		target:               options.Target,
+		proxy:                proxy,
 	}
 
 	originalDirector := proxy.Director
@@ -125,7 +131,7 @@ func (p *ProxyServer) modifyRequest(req *http.Request) {
 func (p *ProxyServer) modifyContent(extNames []string, body []byte, originHost string, proxyHost string) []byte {
 	bodyStr := string(body)
 
-	bodyStr = replaceHost(bodyStr, originHost, proxyHost)
+	bodyStr = replaceHost(bodyStr, originHost, proxyHost, p.proxyExternal, p.proxyExternalIgnores)
 
 	if contains(extNames, ".html") || contains(extNames, ".htm") || contains(extNames, ".xhtml") {
 		bodyStr = regIntegrity.ReplaceAllString(bodyStr, "")
@@ -203,7 +209,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 					res.Header.Set("Location", newLocation.String())
 				}
 			} else {
-				newLocation := replaceHost(v, target.Host, proxyHost)
+				newLocation := replaceHost(v, target.Host, proxyHost, p.proxyExternal, p.proxyExternalIgnores)
 				res.Header.Set("Location", newLocation)
 			}
 

@@ -20,6 +20,8 @@ OPTIONS:
   --help                              print help information
   --version                           show version information
   --port="<int>"                      specify the port that the proxy server listens on. defaults: 80
+  --proxy-external                    Specify whether to proxy an address outside the host. defaults: false
+  --proxy-external-ignore=<host>      Specify the external host without using a proxy. defaults: ""
   --req-header="key=value"            specify the request header attached to the request. defaults: ""
   --res-header="key=value"            specify the response headers. defaults: ""
   --cors                              enable cors. defaults: false

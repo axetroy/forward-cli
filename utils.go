@@ -35,7 +35,7 @@ func isHttpUrl(u string) bool {
 	return regexp.MustCompile(`^https?:\/\/`).MatchString(u)
 }
 
-func replaceHost(content, oldHost, newHost string) string {
+func replaceHost(content, oldHost, newHost string, proxyExternal bool, proxyExternalIgnores []string) string {
 	if !strings.HasPrefix(oldHost, "http") {
 		oldHost = "http://" + oldHost
 	}
@@ -80,9 +80,9 @@ func replaceHost(content, oldHost, newHost string) string {
 				escapedValue := strings.Join(arr[1:], "=")
 
 				if unescapedValue, err := url.QueryUnescape(escapedValue); err == nil {
-					escapedValue = url.QueryEscape(replaceHost(unescapedValue, oldHost, newHost))
+					escapedValue = url.QueryEscape(replaceHost(unescapedValue, oldHost, newHost, proxyExternal, proxyExternalIgnores))
 				} else {
-					escapedValue = replaceHost(escapedValue, oldHost, newHost)
+					escapedValue = replaceHost(escapedValue, oldHost, newHost, proxyExternal, proxyExternalIgnores)
 				}
 
 				query = append(query, key+"="+escapedValue)
@@ -92,6 +92,16 @@ func replaceHost(content, oldHost, newHost string) string {
 		matchUrl.RawQuery = strings.Join(query, "&")
 
 		if matchUrl.Host != oldHostUrl.Host {
+			// do not proxy external link
+			if !proxyExternal {
+				return matchUrl.String()
+			}
+
+			// ignore proxy for this domain
+			if contains(proxyExternalIgnores, matchUrl.Host) {
+				return matchUrl.String()
+			}
+
 			if contains([]string{"http", "https"}, matchUrl.Scheme) || strings.HasPrefix(s, "//") {
 				return fmt.Sprintf("%s://%s/?forward_url=%s", newHostUrl.Scheme, newHostUrl.Host, url.QueryEscape(matchUrl.String()))
 			} else if contains([]string{"ws", "wss"}, matchUrl.Scheme) {
