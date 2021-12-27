@@ -34,6 +34,11 @@ var (
 		".text":  {},
 		".json":  {},
 	}
+	htmlExtNames = map[string]struct{}{
+		".html":  {},
+		".htm":   {},
+		".xhtml": {},
+	}
 )
 
 func init() {
@@ -48,9 +53,18 @@ func isHttpUrl(u string) bool {
 	return regexp.MustCompile(`^https?:\/\/`).MatchString(u)
 }
 
-func isShouldReplaceContent(extName []string) bool {
-	for _, extName := range extName {
+func isShouldReplaceContent(extNames []string) bool {
+	for _, extName := range extNames {
 		if _, ok := rewriteContentExtNames[extName]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func isHtml(extNames []string) bool {
+	for _, extName := range extNames {
+		if _, ok := htmlExtNames[extName]; ok {
 			return true
 		}
 	}

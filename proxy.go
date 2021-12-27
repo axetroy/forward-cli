@@ -118,7 +118,7 @@ func (p *ProxyServer) modifyContent(extNames []string, body []byte, originHost s
 	bodyStr = replaceHost(bodyStr, originHost, proxyHost, p.ProxyExternal, p.ProxyExternalIgnores)
 
 	// https://developer.mozilla.org/zh-CN/docs/Web/Security/Subresource_Integrity
-	if contains(extNames, ".html") || contains(extNames, ".htm") || contains(extNames, ".xhtml") {
+	if isHtml(extNames) {
 		bodyStr = regIntegrity.ReplaceAllString(bodyStr, "")
 	}
 
