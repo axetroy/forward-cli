@@ -27,7 +27,7 @@ USAGE:
 OPTIONS:
   --help                              print help information
   --version                           show version information
-  --port="<int>"                      specify the port that the proxy server listens on. defaults: 8080
+  --port="<int>"                      specify the port that the proxy server listens on. defaults: 80
   --req-header="key=value"            specify the request header attached to the request. defaults: ""
   --res-header="key=value"            specify the response headers. defaults: ""
   --cors                              enable cors. defaults: false
@@ -61,7 +61,7 @@ func main() {
 		corsExposeHeaders    string
 		requestHeadersArray  arrayFlags
 		responseHeadersArray arrayFlags
-		port                 string = "8080"
+		port                 string = "80"
 	)
 
 	if len(os.Getenv("PORT")) > 0 {
