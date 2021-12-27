@@ -133,6 +133,7 @@ func (p *ProxyServer) modifyContent(extNames []string, body []byte, originHost s
 
 	bodyStr = replaceHost(bodyStr, originHost, proxyHost, p.proxyExternal, p.proxyExternalIgnores)
 
+	// https://developer.mozilla.org/zh-CN/docs/Web/Security/Subresource_Integrity
 	if contains(extNames, ".html") || contains(extNames, ".htm") || contains(extNames, ".xhtml") {
 		bodyStr = regIntegrity.ReplaceAllString(bodyStr, "")
 	}
@@ -171,6 +172,8 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 	res.Header.Set("X-Proxy-Client", "Forward-Cli")
 	res.Header.Del("Expect-CT")
+
+	// https://developer.mozilla.org/zh-CN/docs/Web/HTTP/CSP
 	res.Header.Del("Content-Security-Policy")
 
 	// overwrite status code
