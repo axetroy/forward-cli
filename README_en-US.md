@@ -1,4 +1,4 @@
-中文简体 | [English](README_en-US.md)
+[中文简体](README.md) | English
 
 [![Build Status](https://github.com/axetroy/forward-cli/workflows/ci/badge.svg)](https://github.com/axetroy/forward-cli/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/axetroy/forward-cli)](https://goreportcard.com/report/github.com/axetroy/forward-cli)
@@ -8,9 +8,9 @@
 
 ## forward-cli
 
-一个命令行工具，反向代理任何网站。例如 Github/Google/Facebook 和其他等
+A command-line tool to reverse proxy any server. eg. Github/Google/Facebook and more.
 
-### 使用
+### Usage
 
 ```bash
 forward - A command line tool to quickly setup a reverse proxy server.
@@ -23,8 +23,7 @@ OPTIONS:
   --version                           show version information
   --address="<int>"                   specify the address that the proxy server listens on. defaults: 0.0.0.0
   --port="<int>"                      specify the port that the proxy server listens on. defaults: 80
-  --compress                          whether keep compress from target response, set to true may slowdown response
-  . defaults: false
+  --compress                          whether keep compress from target response, set to true may slowdown response. defaults: false
   --proxy-external                    whether to proxy external host. defaults: false
   --proxy-external-ignore=<host>      specify the external host without using a proxy. defaults: ""
   --req-header="key=value"            specify the request header attached to the request. defaults: ""
@@ -38,7 +37,7 @@ EXAMPLES:
   forward --cors --req-header="foo=bar" --req-header="hello=world" http://example.com
 ```
 
-### 安装
+### Install
 
 1. Shell (Mac/Linux)
 
@@ -52,16 +51,16 @@ EXAMPLES:
    $r="axetroy/forward-cli";$e="forward";iwr https://github.com/release-lab/install/raw/v1/install.ps1 -useb | iex
    ```
 
-3. [Github release page](https://github.com/axetroy/forward-cli/releases) (全平台)
+3. [Github release page](https://github.com/axetroy/forward-cli/releases) (All platforms)
 
-   下载可执行文件，然后放到 `$PATH` 目录下
+   download the executable file and put the executable file to `$PATH`
 
-4. 使用 [Golang](https://golang.org) 从源码中构建并安装 (全平台)
+4. Build and install from source using [Golang](https://golang.org) (All platforms)
 
    ```bash
    go install github.com/axetroy/forward-cli/cmd/forward@latest
    ```
 
-### 开源许可
+### License
 
 The [MIT License](LICENSE)
