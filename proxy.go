@@ -189,20 +189,19 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 	// overrit 302 Location
 	{
 		// https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Location
-		for _, v := range res.Header["Location"] {
-
-			// // relative path
-			if !isHttpUrl(v) {
+		location := res.Header.Get("Location")
+		if location != "" {
+			// relative path
+			if !isHttpUrl(location) {
 				if isProxyUrl {
 					newLocation := target
-					newLocation.Path = v
+					newLocation.Path = location
 					res.Header.Set("Location", newLocation.String())
 				}
 			} else {
-				newLocation := replaceHost(v, target.Host, proxyHost, p.ProxyExternal, p.ProxyExternalIgnores)
+				newLocation := replaceHost(location, target.Host, proxyHost, p.ProxyExternal, p.ProxyExternalIgnores)
 				res.Header.Set("Location", newLocation)
 			}
-
 		}
 	}
 
@@ -215,7 +214,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 		res.Header.Add(k, p.ResHeaders.Get(k))
 	}
 
-	// replace HTML/css/javascript content
+	// replace HTML/css/javascript... content
 	{
 		contentType := res.Header.Get("Content-Type")
 
