@@ -61,7 +61,7 @@ func NewProxyServer(options *ProxyServerOptions) *ProxyServer {
 			return
 		}
 		msg := fmt.Sprintf("%+v\n", err)
-		fmt.Println(msg)
+		log.Println(msg)
 		rw.WriteHeader(http.StatusInternalServerError)
 		_, _ = rw.Write([]byte(msg))
 	}
@@ -76,7 +76,6 @@ func (p *ProxyServer) Handler() func(http.ResponseWriter, *http.Request) {
 }
 
 func (p *ProxyServer) modifyRequest(req *http.Request) {
-	log.Printf("[%s]: %s", req.Method, req.URL.String())
 	target := *p.Target
 	isProxyUrl := req.URL.Query().Get("forward_url") != ""
 
@@ -103,6 +102,8 @@ func (p *ProxyServer) modifyRequest(req *http.Request) {
 		req.URL.Host = target.Host
 		req.URL.Scheme = target.Scheme
 	}
+
+	log.Printf("[%s]: %s", req.Method, req.URL.String())
 
 	req.Header.Set("Host", target.Host)
 	req.Header.Set("Origin", fmt.Sprintf("%s://%s", target.Scheme, target.Host))
