@@ -42,6 +42,7 @@ USAGE:
 OPTIONS:
   --help                              print help information
   --version                           show version information
+  --address="<int>"                   specify the address that the proxy server listens on. defaults: 0.0.0.0
   --port="<int>"                      specify the port that the proxy server listens on. defaults: 80
   --compress                          whether keep compress from target response, set to true may slowdown response. defaults: false
   --proxy-external                    whether to proxy external host. defaults: false
@@ -72,13 +73,14 @@ func main() {
 	var (
 		showHelp             bool
 		showVersion          bool
+		address              string = "0.0.0.0"
+		port                 string = "80"
 		compress             bool
 		cors                 bool
 		proxyExternal        bool
 		proxyExternalIgnores arrayFlags
 		requestHeadersArray  arrayFlags
 		responseHeadersArray arrayFlags
-		port                 string = "80"
 	)
 
 	if len(os.Getenv("PORT")) > 0 {
@@ -98,6 +100,7 @@ func main() {
 	flag.BoolVar(&proxyExternal, "proxy-external", false, "")
 	flag.Var(&proxyExternalIgnores, "proxy-external-ignore", "")
 	flag.StringVar(&port, "port", port, "")
+	flag.StringVar(&address, "address", address, "")
 
 	flag.Usage = printHelp
 
@@ -157,7 +160,11 @@ func main() {
 
 	http.HandleFunc("/", proxy.Handler())
 
-	log.Printf("Proxy 'http://%s:%s' to '%s'\n", getLocalIP(), port, target)
+	if address == "0.0.0.0" {
+		log.Printf("Proxy 'http://%s:%s' to '%s'\n", getLocalIP(), port, target)
+	} else {
+		log.Printf("Proxy 'http://%s:%s' to '%s'\n", address, port, target)
+	}
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), nil))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", address, port), nil))
 }
