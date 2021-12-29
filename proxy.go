@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"mime"
 	"net"
 	"net/http"
@@ -75,6 +76,7 @@ func (p *ProxyServer) Handler() func(http.ResponseWriter, *http.Request) {
 }
 
 func (p *ProxyServer) modifyRequest(req *http.Request) {
+	log.Printf("[%s]: %s", req.Method, req.URL.String())
 	target := *p.Target
 	isProxyUrl := req.URL.Query().Get("forward_url") != ""
 
