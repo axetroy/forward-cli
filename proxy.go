@@ -182,7 +182,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 		for _, v := range cookies {
 			v.Domain = hostName
-			if v.Secure {
+			if v.Secure && !p.UseSSL {
 				v.Secure = false
 			}
 
