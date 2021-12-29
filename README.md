@@ -19,6 +19,7 @@ USAGE:
 OPTIONS:
   --help                              print help information
   --version                           show version information
+  --address="<int>"                   specify the address that the proxy server listens on. defaults: 0.0.0.0
   --port="<int>"                      specify the port that the proxy server listens on. defaults: 80
   --compress                          whether keep compress from target response, set to true may slowdown response. defaults: false
   --proxy-external                    whether to proxy external host. defaults: false
