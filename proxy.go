@@ -147,14 +147,18 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 	proxyHost := res.Request.Header.Get("X-Origin-Host") // localhost:8080 or localhost
 
-	hostName, _, err := net.SplitHostPort(proxyHost)
+	var hostName string
 
-	if err != nil {
-		if strings.Contains(err.Error(), "missing port in address") {
-			hostName = proxyHost
-		} else {
+	if strings.Contains(proxyHost, ":") {
+		h, _, err := net.SplitHostPort(proxyHost)
+
+		if err != nil {
 			return errors.WithStack(err)
 		}
+
+		hostName = h
+	} else {
+		hostName = proxyHost
 	}
 
 	res.Header.Set("X-Proxy-Client", "Forward-Cli")
