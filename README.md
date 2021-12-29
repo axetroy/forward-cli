@@ -10,6 +10,8 @@
 
 一个命令行工具，反向代理任何网站。例如 Github/Google/Facebook 和其他等
 
+![img](screenshot.png)
+
 ### 使用
 
 ```bash

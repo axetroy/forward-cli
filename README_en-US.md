@@ -10,6 +10,8 @@
 
 A command-line tool to reverse proxy any server. eg. Github/Google/Facebook and more.
 
+![img](screenshot.png)
+
 ### Usage
 
 ```bash
