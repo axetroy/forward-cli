@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	forward "github.com/axetroy/forward-cli"
@@ -50,6 +51,7 @@ OPTIONS:
   --req-header="key=value"            specify the request header attached to the request. defaults: ""
   --res-header="key=value"            specify the response headers. defaults: ""
   --cors                              whether enable cors. defaults: false
+  --overwrite=<folder>                enable overwrite with folder. defaults: ""
 
 EXAMPLES:
   forward http://example.com
@@ -77,6 +79,7 @@ func main() {
 		port                 string = "80"
 		compress             bool
 		cors                 bool
+		overwriteFolder      string
 		proxyExternal        bool
 		proxyExternalIgnores arrayFlags
 		requestHeadersArray  arrayFlags
@@ -101,6 +104,7 @@ func main() {
 	flag.Var(&proxyExternalIgnores, "proxy-external-ignore", "")
 	flag.StringVar(&port, "port", port, "")
 	flag.StringVar(&address, "address", address, "")
+	flag.StringVar(&overwriteFolder, "overwrite", overwriteFolder, "")
 
 	flag.Usage = printHelp
 
@@ -148,6 +152,30 @@ func main() {
 		responseHeaders.Set(arr[0], strings.Join(arr[1:], "="))
 	}
 
+	if !filepath.IsAbs(overwriteFolder) {
+		cwd, err := os.Getwd()
+
+		if err != nil {
+			log.Panic(err)
+		}
+
+		overwriteFolder = filepath.Join(cwd, overwriteFolder)
+	}
+
+	folder, err := os.Stat(overwriteFolder)
+
+	if os.IsNotExist(err) {
+		log.Panicln("the folder of '--overwrite=<folder>' not found in your system")
+	}
+
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	if !folder.IsDir() {
+		log.Panicln("the flag '--overwrite=<folder>' must be a folder")
+	}
+
 	proxy := forward.NewProxyServer(&forward.ProxyServerOptions{
 		ReqHeaders:           requestHeaders,
 		ResHeaders:           responseHeaders,
@@ -156,6 +184,7 @@ func main() {
 		ProxyExternal:        proxyExternal,
 		ProxyExternalIgnores: proxyExternalIgnores,
 		Target:               u,
+		OverwriteFolder:      overwriteFolder,
 	})
 
 	http.HandleFunc("/", proxy.Handler())

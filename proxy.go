@@ -14,6 +14,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -39,6 +41,7 @@ type ProxyServerOptions struct {
 	ProxyExternal        bool        // whether to proxy external host
 	ProxyExternalIgnores []string    // the host name that should ignore when enable proxy external
 	Cors                 bool        // whether enable cors
+	OverwriteFolder      string      // overwrite request with paths
 }
 
 func NewProxyServer(options *ProxyServerOptions) *ProxyServer {
@@ -71,7 +74,56 @@ func NewProxyServer(options *ProxyServerOptions) *ProxyServer {
 
 func (p *ProxyServer) Handler() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		p.proxy.ServeHTTP(w, r)
+		if p.OverwriteFolder != "" && r.Method == http.MethodGet {
+			paths := []string{p.OverwriteFolder}
+			paths = append(paths, strings.Split(strings.TrimLeft(r.URL.Path, "/"), "/")...)
+
+			proxyFilePath := filepath.Join(paths...)
+
+			fInfo, err := os.Stat(proxyFilePath)
+
+			// proxy request if file is not exist
+			if os.IsNotExist(err) {
+				p.proxy.ServeHTTP(w, r)
+				return
+			}
+
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(fmt.Sprintf("%+v\n", errors.WithStack(err))))
+				return
+			}
+
+			if fInfo.IsDir() {
+				p.proxy.ServeHTTP(w, r)
+				return
+			}
+
+			f, err := os.Open(proxyFilePath)
+
+			// proxy request if file is not exist
+			if os.IsNotExist(err) {
+				p.proxy.ServeHTTP(w, r)
+				return
+			}
+
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(fmt.Sprintf("%+v\n", errors.WithStack(err))))
+				return
+			}
+
+			defer f.Close()
+
+			MIMEType := mime.TypeByExtension(filepath.Ext(proxyFilePath))
+
+			w.Header().Set("Content-Type", MIMEType)
+			w.WriteHeader(http.StatusOK)
+
+			_, _ = io.Copy(w, f)
+		} else {
+			p.proxy.ServeHTTP(w, r)
+		}
 	}
 }
 

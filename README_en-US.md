@@ -31,6 +31,7 @@ OPTIONS:
   --req-header="key=value"            specify the request header attached to the request. defaults: ""
   --res-header="key=value"            specify the response headers. defaults: ""
   --cors                              whether enable cors. defaults: false
+  --overwrite=<folder>                enable overwrite with folder. defaults: ""
 
 EXAMPLES:
   forward http://example.com
