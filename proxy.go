@@ -41,6 +41,7 @@ type ProxyServerOptions struct {
 	ProxyExternal        bool        // whether to proxy external host
 	ProxyExternalIgnores []string    // the host name that should ignore when enable proxy external
 	Cors                 bool        // whether enable cors
+	NoCache              bool        // disabled cache for response
 	OverwriteFolder      string      // overwrite request with paths
 }
 
@@ -215,6 +216,13 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 	res.Header.Set("X-Proxy-Client", "Forward-Cli")
 	res.Header.Del("Expect-CT")
+
+	// disable cache
+	{
+		if p.NoCache {
+			res.Header.Set("Cache-Control", "no-cache")
+		}
+	}
 
 	// https://developer.mozilla.org/zh-CN/docs/Web/HTTP/CSP
 	res.Header.Del("Content-Security-Policy")

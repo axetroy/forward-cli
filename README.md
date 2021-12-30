@@ -32,6 +32,7 @@ OPTIONS:
   --res-header="key=value"            specify the response headers. defaults: ""
   --cors                              whether enable cors. defaults: false
   --overwrite=<folder>                enable overwrite with folder. defaults: ""
+  --no-cache                          disabled cache for response. defaults: true
 
 EXAMPLES:
   forward http://example.com

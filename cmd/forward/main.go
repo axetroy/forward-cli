@@ -52,6 +52,7 @@ OPTIONS:
   --res-header="key=value"            specify the response headers. defaults: ""
   --cors                              whether enable cors. defaults: false
   --overwrite=<folder>                enable overwrite with folder. defaults: ""
+  --no-cache                          disabled cache for response. defaults: true
 
 EXAMPLES:
   forward http://example.com
@@ -73,14 +74,15 @@ func (i *arrayFlags) Set(value string) error {
 
 func main() {
 	var (
-		showHelp             bool
-		showVersion          bool
+		showHelp             bool   = false
+		showVersion          bool   = false
 		address              string = "0.0.0.0"
 		port                 string = "80"
-		compress             bool
-		cors                 bool
-		overwriteFolder      string
-		proxyExternal        bool
+		compress             bool   = false
+		cors                 bool   = false
+		noCache              bool   = true
+		overwriteFolder      string = ""
+		proxyExternal        bool   = false
 		proxyExternalIgnores arrayFlags
 		requestHeadersArray  arrayFlags
 		responseHeadersArray arrayFlags
@@ -94,13 +96,14 @@ func main() {
 		}
 	}
 
-	flag.BoolVar(&showHelp, "help", false, "")
-	flag.BoolVar(&showVersion, "version", false, "")
+	flag.BoolVar(&showHelp, "help", showHelp, "")
+	flag.BoolVar(&showVersion, "version", showVersion, "")
 	flag.Var(&requestHeadersArray, "req-header", "")
 	flag.Var(&responseHeadersArray, "res-header", "")
-	flag.BoolVar(&cors, "compress", false, "")
-	flag.BoolVar(&cors, "cors", false, "")
-	flag.BoolVar(&proxyExternal, "proxy-external", false, "")
+	flag.BoolVar(&compress, "compress", compress, "")
+	flag.BoolVar(&cors, "cors", cors, "")
+	flag.BoolVar(&noCache, "no-cache", noCache, "")
+	flag.BoolVar(&proxyExternal, "proxy-external", proxyExternal, "")
 	flag.Var(&proxyExternalIgnores, "proxy-external-ignore", "")
 	flag.StringVar(&port, "port", port, "")
 	flag.StringVar(&address, "address", address, "")
@@ -184,6 +187,7 @@ func main() {
 		ProxyExternal:        proxyExternal,
 		ProxyExternalIgnores: proxyExternalIgnores,
 		Target:               u,
+		NoCache:              noCache,
 		OverwriteFolder:      overwriteFolder,
 	})
 
