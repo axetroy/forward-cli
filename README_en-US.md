@@ -33,8 +33,8 @@ OPTIONS:
   --cors                              whether enable cors. defaults: false
   --overwrite=<folder>                enable overwrite with folder. defaults: ""
   --no-cache                          disabled cache for response. defaults: true
-  --tls-cert-file                     the cert file for enabled tls. defaults: ""
-  --tls-key-file                      the key file for enabled tls. defaults: ""
+  --tls-cert-file=<string>            the cert file path for enabled tls. defaults: ""
+  --tls-key-file=<string>             the key file path for enabled tls. defaults: ""
 
 EXAMPLES:
   forward http://example.com
