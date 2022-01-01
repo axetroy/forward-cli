@@ -61,7 +61,7 @@ EXAMPLES:
   forward --port=80 http://example.com
   forward --req-header="foo=bar" http://example.com
   forward --cors --req-header="foo=bar" --req-header="hello=world" http://example.com
-  forward --port=443 --tls-cert-file=/path/to/cert/file --tls-key-file=/path/to/key/file http://example.com`)
+  forward --tls-cert-file=/path/to/cert/file --tls-key-file=/path/to/key/file http://example.com`)
 }
 
 type arrayFlags []string
