@@ -68,6 +68,21 @@ EXAMPLES:
    go install github.com/axetroy/forward-cli/cmd/forward@latest
    ```
 
+### 杂项
+
+1. 如何启用 HTTPS？
+
+要启用 HTTPS，首先先生成 key 和 证书文件
+
+```bash
+# 生成 key
+openssl genrsa -out server.key 2048
+# 生成证书
+openssl req -new -x509 -sha256 -key server.key -out server.pem -days 3650
+# 启动代理服务器
+forward --tls-cert-file=server.pem --tls-key-file=server.key http://example.com
+```
+
 ### 开源许可
 
 The [MIT License](LICENSE)

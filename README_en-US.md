@@ -68,6 +68,21 @@ EXAMPLES:
    go install github.com/axetroy/forward-cli/cmd/forward@latest
    ```
 
+### MISC
+
+1. Hot to enable HTTPS?
+
+to enable HTTPS, you need to generate the key and cert first
+
+```bash
+# generate key
+openssl genrsa -out server.key 2048
+# generate cert
+openssl req -new -x509 -sha256 -key server.key -out server.pem -days 3650
+# run proxy server
+forward --tls-cert-file=server.pem --tls-key-file=server.key http://example.com
+```
+
 ### License
 
 The [MIT License](LICENSE)
