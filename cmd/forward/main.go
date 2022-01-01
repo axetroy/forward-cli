@@ -91,6 +91,7 @@ func main() {
 		responseHeadersArray arrayFlags
 		certFilePath         string = ""
 		keyFilePath          string = ""
+		useTLS               bool
 	)
 
 	if len(os.Getenv("PORT")) > 0 {
@@ -113,12 +114,14 @@ func main() {
 	flag.StringVar(&port, "port", port, "")
 	flag.StringVar(&address, "address", address, "")
 	flag.StringVar(&overwriteFolder, "overwrite", overwriteFolder, "")
-	flag.StringVar(&certFilePath, "cert-file", certFilePath, "")
-	flag.StringVar(&keyFilePath, "key-file", keyFilePath, "")
+	flag.StringVar(&certFilePath, "tls-cert-file", certFilePath, "")
+	flag.StringVar(&keyFilePath, "tls-key-file", keyFilePath, "")
 
 	flag.Usage = printHelp
 
 	flag.Parse()
+
+	useTLS = certFilePath != "" && keyFilePath != ""
 
 	if showHelp {
 		printHelp()
@@ -196,14 +199,24 @@ func main() {
 		Target:               u,
 		NoCache:              noCache,
 		OverwriteFolder:      overwriteFolder,
+		UseSSL:               useTLS,
 	})
 
 	http.HandleFunc("/", proxy.Handler())
 
+	scheme := "http"
+
+	if useTLS {
+		scheme = "https"
+		if port == "80" {
+			port = "443"
+		}
+	}
+
 	if address == "0.0.0.0" {
-		log.Printf("Proxy 'http://%s:%s' to '%s'\n", getLocalIP(), port, target)
+		log.Printf("Proxy '%s://%s:%s' to '%s'\n", scheme, getLocalIP(), port, target)
 	} else {
-		log.Printf("Proxy 'http://%s:%s' to '%s'\n", address, port, target)
+		log.Printf("Proxy '%s://%s:%s' to '%s'\n", scheme, address, port, target)
 	}
 
 	if certFilePath != "" && keyFilePath != "" {
