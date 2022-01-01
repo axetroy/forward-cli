@@ -51,10 +51,10 @@ OPTIONS:
   --req-header="key=value"            specify the request header attached to the request. defaults: ""
   --res-header="key=value"            specify the response headers. defaults: ""
   --cors                              whether enable cors. defaults: false
-  --overwrite=<folder>                enable overwrite with folder. defaults: ""
+  --overwrite=<folder>                enable overwrite with a folder. defaults: ""
   --no-cache                          disabled cache for response. defaults: true
-  --tls-cert-file=<string>            the cert file path for enabled tls. defaults: ""
-  --tls-key-file=<string>             the key file path for enabled tls. defaults: ""
+  --tls-cert-file=<filepath>          the cert file path for enabled tls. defaults: ""
+  --tls-key-file=<filepath>           the key file path for enabled tls. defaults: ""
 
 EXAMPLES:
   forward http://example.com
