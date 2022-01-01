@@ -48,8 +48,8 @@ OPTIONS:
   --compress                          whether keep compress from target response, set to true may slowdown response. defaults: false
   --proxy-external                    whether to proxy external host. defaults: false
   --proxy-external-ignore=<host>      specify the external host without using a proxy. defaults: ""
-  --req-header="key=value"            specify the request header attached to the request. defaults: ""
-  --res-header="key=value"            specify the response headers. defaults: ""
+  --req-header="key=value"            specify the request header attached to the request. Allow multiple flags. defaults: ""
+  --res-header="key=value"            specify the response headers. Allow multiple flags. defaults: ""
   --cors                              whether enable cors. defaults: false
   --overwrite=<folder>                enable overwrite with a folder. defaults: ""
   --no-cache                          disabled cache for response. defaults: true
