@@ -53,12 +53,15 @@ OPTIONS:
   --cors                              whether enable cors. defaults: false
   --overwrite=<folder>                enable overwrite with folder. defaults: ""
   --no-cache                          disabled cache for response. defaults: true
+  --tls-cert-file                     the cert file for enabled tls. defaults: ""
+  --tls-key-file                      the key file for enabled tls. defaults: ""
 
 EXAMPLES:
   forward http://example.com
   forward --port=80 http://example.com
   forward --req-header="foo=bar" http://example.com
-  forward --cors --req-header="foo=bar" --req-header="hello=world" http://example.com`)
+  forward --cors --req-header="foo=bar" --req-header="hello=world" http://example.com
+  forward --port=443 --tls-cert-file=/path/to/cert/file --tls-key-file=/path/to/key/file http://example.com`)
 }
 
 type arrayFlags []string
@@ -86,6 +89,8 @@ func main() {
 		proxyExternalIgnores arrayFlags
 		requestHeadersArray  arrayFlags
 		responseHeadersArray arrayFlags
+		certFilePath         string = ""
+		keyFilePath          string = ""
 	)
 
 	if len(os.Getenv("PORT")) > 0 {
@@ -108,6 +113,8 @@ func main() {
 	flag.StringVar(&port, "port", port, "")
 	flag.StringVar(&address, "address", address, "")
 	flag.StringVar(&overwriteFolder, "overwrite", overwriteFolder, "")
+	flag.StringVar(&certFilePath, "cert-file", certFilePath, "")
+	flag.StringVar(&keyFilePath, "key-file", keyFilePath, "")
 
 	flag.Usage = printHelp
 
@@ -199,5 +206,9 @@ func main() {
 		log.Printf("Proxy 'http://%s:%s' to '%s'\n", address, port, target)
 	}
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", address, port), nil))
+	if certFilePath != "" && keyFilePath != "" {
+		log.Fatal(http.ListenAndServeTLS(fmt.Sprintf("%s:%s", address, port), certFilePath, keyFilePath, nil))
+	} else {
+		log.Fatal(http.ListenAndServe(fmt.Sprintf("%s:%s", address, port), nil))
+	}
 }
