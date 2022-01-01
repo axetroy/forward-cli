@@ -85,6 +85,15 @@ func Test_replaceHost(t *testing.T) {
 			},
 			want: "http://localhost:8080/?forward_url=https%3A%2F%2Fpassport.baidu.com%2Fv2%2F%3Flogin%26tpl%3Dmn%26u%3Dhttp%253A%252F%252Flocalhost%253A8080%252F",
 		},
+		{
+			name: "8",
+			args: args{
+				content: "file:///path/to/file",
+				oldHost: "example.com",
+				newHost: "localhost:8080",
+			},
+			want: "file:///path/to/file",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

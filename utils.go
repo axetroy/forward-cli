@@ -20,7 +20,7 @@ func contains(s []string, str string) bool {
 }
 
 var (
-	urlRegexp              *regexp.Regexp
+	urlWithSchemeRegExp    *regexp.Regexp
 	rewriteContentExtNames = map[string]struct{}{
 		".html":  {},
 		".htm":   {},
@@ -42,10 +42,10 @@ var (
 )
 
 func init() {
-	if u, err := xurls.StrictMatchingScheme("https?://|wss?://"); err != nil {
+	if u, err := xurls.StrictMatchingScheme("https?://|wss?://|//"); err != nil {
 		panic(err)
 	} else {
-		urlRegexp = u
+		urlWithSchemeRegExp = u
 	}
 }
 
@@ -72,10 +72,10 @@ func isHtml(extNames []string) bool {
 }
 
 func replaceHost(content, oldHost, newHost string, useSSL bool, proxyExternal bool, proxyExternalIgnores []string) string {
-	newContent := urlRegexp.ReplaceAllStringFunc(content, func(s string) string {
+	newContent := urlWithSchemeRegExp.ReplaceAllStringFunc(content, func(s string) string {
 		matchUrl, err := url.Parse(s)
 
-		if err != nil {
+		if err != nil || matchUrl.Host == "" {
 			return s
 		}
 
@@ -156,8 +156,6 @@ func replaceHost(content, oldHost, newHost string, useSSL bool, proxyExternal bo
 
 		return matchUrl.String()
 	})
-
-	newContent = strings.ReplaceAll(newContent, "//"+oldHost, "//"+newHost)
 
 	return newContent
 }
