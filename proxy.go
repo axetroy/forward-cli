@@ -176,6 +176,9 @@ func (p *ProxyServer) modifyContent(extNames []string, body []byte, originHost s
 	// https://developer.mozilla.org/zh-CN/docs/Web/Security/Subresource_Integrity
 	if isHtml(extNames) {
 		bodyStr = regIntegrity.ReplaceAllString(bodyStr, "")
+
+		// <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src https://*; child-src 'none';">
+		bodyStr = strings.ReplaceAll(bodyStr, `http-equiv="Content-Security-Policy"`, "") // disabled CSP
 	}
 
 	return []byte(bodyStr)
@@ -224,8 +227,11 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 		}
 	}
 
-	// https://developer.mozilla.org/zh-CN/docs/Web/HTTP/CSP
-	res.Header.Del("Content-Security-Policy")
+	// disabled CSP
+	{
+		// https://developer.mozilla.org/zh-CN/docs/Web/HTTP/CSP
+		res.Header.Del("Content-Security-Policy")
+	}
 
 	// overwrite status code
 	{
