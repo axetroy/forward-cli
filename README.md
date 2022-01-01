@@ -8,7 +8,7 @@
 
 ## forward-cli
 
-一个命令行工具，反向代理任何网站。例如 Github/Google/Facebook 和其他等
+一个命令行工具，反向代理任何网站。例如 Github/Google/Facebook 和其他等. [更多信息](https://github.com/axetroy/blog/issues/634)
 
 ![img](screenshot.png)
 

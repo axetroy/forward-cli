@@ -8,7 +8,7 @@
 
 ## forward-cli
 
-A command-line tool to reverse proxy any server. eg. Github/Google/Facebook and more.
+A command-line tool to reverse proxy any server. eg. Github/Google/Facebook and more. [more information](https://github.com/axetroy/blog/issues/634)
 
 ![img](screenshot.png)
 
