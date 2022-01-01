@@ -77,21 +77,21 @@ func (i *arrayFlags) Set(value string) error {
 
 func main() {
 	var (
-		showHelp             bool   = false
-		showVersion          bool   = false
-		address              string = "0.0.0.0"
-		port                 string = "80"
-		compress             bool   = false
-		cors                 bool   = false
-		noCache              bool   = true
-		overwriteFolder      string = ""
-		proxyExternal        bool   = false
-		proxyExternalIgnores arrayFlags
-		requestHeadersArray  arrayFlags
-		responseHeadersArray arrayFlags
-		certFilePath         string = ""
-		keyFilePath          string = ""
-		useTLS               bool
+		showHelp             bool       = false
+		showVersion          bool       = false
+		address              string     = "0.0.0.0"
+		port                 string     = "80"
+		compress             bool       = false
+		cors                 bool       = false
+		noCache              bool       = true
+		overwriteFolder      string     = ""
+		proxyExternal        bool       = false
+		proxyExternalIgnores arrayFlags = arrayFlags{}
+		requestHeadersArray  arrayFlags = arrayFlags{}
+		responseHeadersArray arrayFlags = arrayFlags{}
+		certFilePath         string     = ""
+		keyFilePath          string     = ""
+		useTLS               bool       = false
 	)
 
 	if len(os.Getenv("PORT")) > 0 {
