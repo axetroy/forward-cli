@@ -34,7 +34,6 @@ type ProxyServer struct {
 
 type ProxyServerOptions struct {
 	Target               *url.URL    // proxy target
-	Compress             bool        // whether keep compress from target response
 	UseSSL               bool        // use SSL
 	ReqHeaders           http.Header // set request headers
 	ResHeaders           http.Header // set response headers
@@ -325,26 +324,20 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 			newBody := p.modifyContent(extNames, body, target.Host, proxyHost)
 
-			if p.Compress {
-				var b bytes.Buffer
-				gz := gzip.NewWriter(&b)
+			var b bytes.Buffer
+			gz := gzip.NewWriter(&b)
 
-				if _, err := gz.Write(newBody); err != nil {
-					return errors.WithStack(err)
-				}
-
-				if err := gz.Close(); err != nil {
-					return errors.WithStack(err)
-				}
-
-				bin := b.Bytes()
-				res.Header.Set("Content-Length", fmt.Sprint(len(bin)))
-				res.Body = io.NopCloser(bytes.NewReader(bin))
-			} else {
-				res.Header.Set("Content-Length", fmt.Sprint(len(newBody)))
-				res.Header.Set("Content-Encoding", "identity")
-				res.Body = io.NopCloser(bytes.NewReader(newBody))
+			if _, err := gz.Write(newBody); err != nil {
+				return errors.WithStack(err)
 			}
+
+			if err := gz.Close(); err != nil {
+				return errors.WithStack(err)
+			}
+
+			bin := b.Bytes()
+			res.Header.Set("Content-Length", fmt.Sprint(len(bin)))
+			res.Body = io.NopCloser(bytes.NewReader(bin))
 
 		case "compress":
 			// Deprecated by most browsers
@@ -365,28 +358,22 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 			newBody := p.modifyContent(extNames, body, target.Host, proxyHost)
 
-			if p.Compress {
-				buf := &bytes.Buffer{}
+			buf := &bytes.Buffer{}
 
-				w := zlib.NewWriter(buf)
+			w := zlib.NewWriter(buf)
 
-				if n, err := w.Write(newBody); err != nil {
-					return errors.WithStack(err)
-				} else if n < len(newBody) {
-					return fmt.Errorf("n too small: %d vs %d for %s", n, len(newBody), string(newBody))
-				}
-
-				if err := w.Close(); err != nil {
-					return errors.WithStack(err)
-				}
-
-				res.Header.Set("Content-Length", fmt.Sprint(buf.Len()))
-				res.Body = io.NopCloser(buf)
-			} else {
-				res.Header.Set("Content-Length", fmt.Sprint(len(newBody)))
-				res.Header.Set("Content-Encoding", "identity")
-				res.Body = io.NopCloser(bytes.NewReader(newBody))
+			if n, err := w.Write(newBody); err != nil {
+				return errors.WithStack(err)
+			} else if n < len(newBody) {
+				return fmt.Errorf("n too small: %d vs %d for %s", n, len(newBody), string(newBody))
 			}
+
+			if err := w.Close(); err != nil {
+				return errors.WithStack(err)
+			}
+
+			res.Header.Set("Content-Length", fmt.Sprint(buf.Len()))
+			res.Body = io.NopCloser(buf)
 		case "br":
 			reader := brotli.NewReader(res.Body)
 
@@ -398,26 +385,20 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 
 			newBody := p.modifyContent(extNames, body, target.Host, proxyHost)
 
-			if p.Compress {
-				buf := &bytes.Buffer{}
-				w := brotli.NewWriter(buf)
-				if n, err := w.Write(newBody); err != nil {
-					return errors.WithStack(err)
-				} else if n < len(newBody) {
-					return fmt.Errorf("n too small: %d vs %d for %s", n, len(newBody), string(newBody))
-				}
-
-				if err := w.Close(); err != nil {
-					return errors.WithStack(err)
-				}
-
-				res.Header.Set("Content-Length", fmt.Sprint(buf.Len()))
-				res.Body = io.NopCloser(buf)
-			} else {
-				res.Header.Set("Content-Length", fmt.Sprint(len(newBody)))
-				res.Header.Set("Content-Encoding", "identity")
-				res.Body = io.NopCloser(bytes.NewReader(newBody))
+			buf := &bytes.Buffer{}
+			w := brotli.NewWriter(buf)
+			if n, err := w.Write(newBody); err != nil {
+				return errors.WithStack(err)
+			} else if n < len(newBody) {
+				return fmt.Errorf("n too small: %d vs %d for %s", n, len(newBody), string(newBody))
 			}
+
+			if err := w.Close(); err != nil {
+				return errors.WithStack(err)
+			}
+
+			res.Header.Set("Content-Length", fmt.Sprint(buf.Len()))
+			res.Body = io.NopCloser(buf)
 		case "identity":
 			fallthrough
 		default:

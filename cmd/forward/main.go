@@ -45,7 +45,6 @@ OPTIONS:
   --version                           show version information
   --address="<string>"                specify the address that the proxy server listens on. defaults: 0.0.0.0
   --port="<int>"                      specify the port that the proxy server listens on. defaults: 80
-  --no-compress                       disable compress response. defaults: false
   --proxy-external                    whether to proxy external host. defaults: false
   --proxy-external-ignore=<host>      specify the external host without using a proxy. defaults: ""
   --req-header="key=value"            specify the request header attached to the request. Allow multiple flags. defaults: ""
@@ -81,7 +80,6 @@ func main() {
 		showVersion          bool       = false
 		address              string     = "0.0.0.0"
 		port                 string     = "80"
-		noCompress           bool       = false
 		cors                 bool       = false
 		noCache              bool       = true
 		overwriteFolder      string     = ""
@@ -98,7 +96,6 @@ func main() {
 	flag.BoolVar(&showVersion, "version", showVersion, "")
 	flag.Var(&requestHeadersArray, "req-header", "")
 	flag.Var(&responseHeadersArray, "res-header", "")
-	flag.BoolVar(&noCompress, "no-compress", noCompress, "")
 	flag.BoolVar(&cors, "cors", cors, "")
 	flag.BoolVar(&noCache, "no-cache", noCache, "")
 	flag.BoolVar(&proxyExternal, "proxy-external", proxyExternal, "")
@@ -184,7 +181,6 @@ func main() {
 	proxy := forward.NewProxyServer(&forward.ProxyServerOptions{
 		ReqHeaders:           requestHeaders,
 		ResHeaders:           responseHeaders,
-		Compress:             !noCompress,
 		Cors:                 cors,
 		ProxyExternal:        proxyExternal,
 		ProxyExternalIgnores: proxyExternalIgnores,
