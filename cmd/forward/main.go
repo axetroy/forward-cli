@@ -94,14 +94,6 @@ func main() {
 		useTLS               bool       = false
 	)
 
-	if len(os.Getenv("PORT")) > 0 {
-		PORT_FROM_ENV := os.Getenv("PORT")
-
-		if PORT_FROM_ENV != "" {
-			port = PORT_FROM_ENV
-		}
-	}
-
 	flag.BoolVar(&showHelp, "help", showHelp, "")
 	flag.BoolVar(&showVersion, "version", showVersion, "")
 	flag.Var(&requestHeadersArray, "req-header", "")
