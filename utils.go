@@ -2,6 +2,7 @@ package forward
 
 import (
 	"fmt"
+	"net"
 	"net/url"
 	"regexp"
 	"strings"
@@ -21,6 +22,7 @@ func contains(s []string, str string) bool {
 
 var (
 	urlWithSchemeRegExp    *regexp.Regexp
+	hostNameRegexp         = regexp.MustCompile(`^(([a-zA-Z]{1})|([a-zA-Z]{1}[a-zA-Z]{1})|([a-zA-Z]{1}[0-9]{1})|([0-9]{1}[a-zA-Z]{1})|([a-zA-Z0-9][a-zA-Z0-9-_]{1,61}[a-zA-Z0-9]))\.([a-zA-Z]{2,6}|[a-zA-Z0-9-]{2,30}\.[a-zA-Z]{2,3})$`)
 	rewriteContentExtNames = map[string]struct{}{
 		".html":  {},
 		".htm":   {},
@@ -75,8 +77,14 @@ func replaceHost(content, oldHost, newHost string, useSSL bool, proxyExternal bo
 	newContent := urlWithSchemeRegExp.ReplaceAllStringFunc(content, func(s string) string {
 		matchUrl, err := url.Parse(s)
 
-		if err != nil || matchUrl.Host == "" {
+		if err != nil {
 			return s
+		}
+
+		if net.ParseIP(matchUrl.Hostname()) == nil {
+			if !hostNameRegexp.MatchString(matchUrl.Host) {
+				return s
+			}
 		}
 
 		// overide url in query
