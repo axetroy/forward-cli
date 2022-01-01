@@ -233,6 +233,12 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 		res.Header.Del("Content-Security-Policy")
 	}
 
+	// disabled Strict-Transport-Security
+	if !p.UseSSL {
+		// https: //developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/Strict-Transport-Security
+		res.Header.Del("Strict-Transport-Security")
+	}
+
 	// overwrite status code
 	{
 		// 301 -> 302
