@@ -71,63 +71,46 @@ func isHtml(extNames []string) bool {
 	return false
 }
 
-func replaceHost(content, oldHost, newHost string, proxyExternal bool, proxyExternalIgnores []string) string {
-	if !strings.HasPrefix(oldHost, "http") {
-		oldHost = "http://" + oldHost
-	}
-	if !strings.HasPrefix(newHost, "http") {
-		newHost = "http://" + newHost
-	}
-
-	newContent := content
-
-	newHostUrl, err := url.Parse(newHost)
-
-	if err != nil {
-		panic(err)
-	}
-
-	oldHostUrl, err := url.Parse(oldHost)
-
-	if err != nil {
-		panic(err)
-	}
-
-	newContent = urlRegexp.ReplaceAllStringFunc(newContent, func(s string) string {
+func replaceHost(content, oldHost, newHost string, useSSL bool, proxyExternal bool, proxyExternalIgnores []string) string {
+	newContent := urlRegexp.ReplaceAllStringFunc(content, func(s string) string {
 		matchUrl, err := url.Parse(s)
 
 		if err != nil {
 			return s
 		}
 
-		query := []string{}
-		queryArr := strings.Split(matchUrl.RawQuery, "&")
+		// overide url in query
+		{
+			query := []string{}
+			queryArr := strings.Split(matchUrl.RawQuery, "&")
 
-		for _, q := range queryArr {
-			arr := strings.Split(q, "=")
-			key := arr[0]
-			if len(arr) == 1 {
-				if strings.Contains(q, "=") {
-					query = append(query, key+"=")
+			for _, q := range queryArr {
+				arr := strings.Split(q, "=")
+				key := arr[0]
+				if len(arr) == 1 {
+					if strings.Contains(q, "=") {
+						query = append(query, key+"=")
+					} else {
+						query = append(query, key)
+					}
 				} else {
-					query = append(query, key)
-				}
-			} else {
-				escapedValue := strings.Join(arr[1:], "=")
+					escapedValue := strings.Join(arr[1:], "=")
 
-				if unescapedValue, err := url.QueryUnescape(escapedValue); err == nil {
-					escapedValue = url.QueryEscape(replaceHost(unescapedValue, oldHost, newHost, proxyExternal, proxyExternalIgnores))
-				} else {
-					escapedValue = replaceHost(escapedValue, oldHost, newHost, proxyExternal, proxyExternalIgnores)
-				}
+					if unescapedValue, err := url.QueryUnescape(escapedValue); err == nil {
+						escapedValue = url.QueryEscape(replaceHost(unescapedValue, oldHost, newHost, useSSL, proxyExternal, proxyExternalIgnores))
+					} else {
+						escapedValue = replaceHost(escapedValue, oldHost, newHost, useSSL, proxyExternal, proxyExternalIgnores)
+					}
 
-				query = append(query, key+"="+escapedValue)
+					query = append(query, key+"="+escapedValue)
+				}
 			}
+
+			matchUrl.RawQuery = strings.Join(query, "&")
 		}
 
-		matchUrl.RawQuery = strings.Join(query, "&")
-
-		if matchUrl.Host != oldHostUrl.Host {
+		// if the host not match the target
+		if matchUrl.Host != oldHost {
 			// do not proxy external link
 			if !proxyExternal {
 				return matchUrl.String()
@@ -139,26 +122,42 @@ func replaceHost(content, oldHost, newHost string, proxyExternal bool, proxyExte
 			}
 
 			if contains([]string{"http", "https"}, matchUrl.Scheme) || strings.HasPrefix(s, "//") {
-				return fmt.Sprintf("%s://%s/?forward_url=%s", newHostUrl.Scheme, newHostUrl.Host, url.QueryEscape(matchUrl.String()))
+				scheme := "http"
+				if useSSL {
+					scheme = "https"
+				}
+				return fmt.Sprintf("%s://%s/?forward_url=%s", scheme, newHost, url.QueryEscape(matchUrl.String()))
 			} else if contains([]string{"ws", "wss"}, matchUrl.Scheme) {
-				return fmt.Sprintf("%s://%s/?forward_url=%s", "ws", newHostUrl.Host, url.QueryEscape(matchUrl.String()))
+				scheme := "ws"
+				if useSSL {
+					scheme = "wss"
+				}
+				return fmt.Sprintf("%s://%s/?forward_url=%s", scheme, newHost, url.QueryEscape(matchUrl.String()))
 			}
 
 			return s
 		}
 
-		if matchUrl.Scheme == "https" {
-			matchUrl.Scheme = "http"
-		} else if matchUrl.Scheme == "wss" {
-			matchUrl.Scheme = "ws"
+		if contains([]string{"http", "https"}, matchUrl.Scheme) {
+			if useSSL {
+				matchUrl.Scheme = "https"
+			} else {
+				matchUrl.Scheme = "http"
+			}
+		} else if contains([]string{"ws", "wss"}, matchUrl.Scheme) {
+			if useSSL {
+				matchUrl.Scheme = "wss"
+			} else {
+				matchUrl.Scheme = "ws"
+			}
 		}
 
-		matchUrl.Host = newHostUrl.Host
+		matchUrl.Host = newHost
 
 		return matchUrl.String()
 	})
 
-	newContent = strings.ReplaceAll(newContent, "//"+oldHostUrl.Host, "//"+newHostUrl.Host)
+	newContent = strings.ReplaceAll(newContent, "//"+oldHost, "//"+newHost)
 
 	return newContent
 }

@@ -171,7 +171,7 @@ func (p *ProxyServer) modifyRequest(req *http.Request) {
 func (p *ProxyServer) modifyContent(extNames []string, body []byte, originHost string, proxyHost string) []byte {
 	bodyStr := string(body)
 
-	bodyStr = replaceHost(bodyStr, originHost, proxyHost, p.ProxyExternal, p.ProxyExternalIgnores)
+	bodyStr = replaceHost(bodyStr, originHost, proxyHost, p.UseSSL, p.ProxyExternal, p.ProxyExternalIgnores)
 
 	// https://developer.mozilla.org/zh-CN/docs/Web/Security/Subresource_Integrity
 	if isHtml(extNames) {
@@ -275,7 +275,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 					res.Header.Set("Location", newLocation.String())
 				}
 			} else {
-				newLocation := replaceHost(location, target.Host, proxyHost, p.ProxyExternal, p.ProxyExternalIgnores)
+				newLocation := replaceHost(location, target.Host, proxyHost, p.UseSSL, p.ProxyExternal, p.ProxyExternalIgnores)
 				res.Header.Set("Location", newLocation)
 			}
 		}

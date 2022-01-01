@@ -88,7 +88,7 @@ func Test_replaceHost(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := replaceHost(tt.args.content, tt.args.oldHost, tt.args.newHost, true, []string{}); got != tt.want {
+			if got := replaceHost(tt.args.content, tt.args.oldHost, tt.args.newHost, false, true, []string{}); got != tt.want {
 				t.Errorf("replaceHost() = %v, want %v", got, tt.want)
 			}
 		})
