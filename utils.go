@@ -160,7 +160,7 @@ func replaceHost(content, oldHost, newHost string, useSSL bool, proxyExternal bo
 			}
 		}
 
-		s = strings.ReplaceAll(s, oldHost, newHost)
+		s = strings.Replace(s, oldHost, newHost, 1)
 
 		return s
 	})
