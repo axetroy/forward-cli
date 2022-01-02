@@ -87,8 +87,6 @@ func replaceHost(content, oldHost, newHost string, useSSL bool, proxyExternal bo
 			}
 		}
 
-		var hasModifyQuery = false
-
 		// overide url in query
 		{
 			query := []string{}
@@ -112,8 +110,6 @@ func replaceHost(content, oldHost, newHost string, useSSL bool, proxyExternal bo
 						escapedValue = replaceHost(escapedValue, oldHost, newHost, useSSL, proxyExternal, proxyExternalIgnores)
 					}
 
-					hasModifyQuery = true
-
 					query = append(query, key+"="+escapedValue)
 				}
 			}
@@ -125,21 +121,15 @@ func replaceHost(content, oldHost, newHost string, useSSL bool, proxyExternal bo
 		if matchUrl.Host != oldHost {
 			// do not proxy external link
 			if !proxyExternal {
-				if !hasModifyQuery {
-					return s
-				}
-				return matchUrl.String()
+				return s
 			}
 
 			// ignore proxy for this domain
 			if contains(proxyExternalIgnores, matchUrl.Host) {
-				if !hasModifyQuery {
-					return s
-				}
-				return matchUrl.String()
+				return s
 			}
 
-			if contains([]string{"http", "https"}, matchUrl.Scheme) || strings.HasPrefix(s, "//") {
+			if contains([]string{"http", "https"}, matchUrl.Scheme) {
 				scheme := "http"
 				if useSSL {
 					scheme = "https"
@@ -158,21 +148,21 @@ func replaceHost(content, oldHost, newHost string, useSSL bool, proxyExternal bo
 
 		if contains([]string{"http", "https"}, matchUrl.Scheme) {
 			if useSSL {
-				matchUrl.Scheme = "https"
+				s = regexp.MustCompile(`^https?:\/\/`).ReplaceAllString(s, "https://")
 			} else {
-				matchUrl.Scheme = "http"
+				s = regexp.MustCompile(`^https?:\/\/`).ReplaceAllString(s, "http://")
 			}
 		} else if contains([]string{"ws", "wss"}, matchUrl.Scheme) {
 			if useSSL {
-				matchUrl.Scheme = "wss"
+				s = regexp.MustCompile(`^wss?:\/\/`).ReplaceAllString(s, "wss://")
 			} else {
-				matchUrl.Scheme = "ws"
+				s = regexp.MustCompile(`^wss?:\/\/`).ReplaceAllString(s, "ws://")
 			}
 		}
 
-		matchUrl.Host = newHost
+		s = strings.ReplaceAll(s, oldHost, newHost)
 
-		return matchUrl.String()
+		return s
 	})
 
 	return newContent

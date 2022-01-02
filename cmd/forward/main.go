@@ -154,28 +154,30 @@ func main() {
 		responseHeaders.Set(arr[0], strings.Join(arr[1:], "="))
 	}
 
-	if !filepath.IsAbs(overwriteFolder) {
-		cwd, err := os.Getwd()
+	if overwriteFolder != "" {
+		if !filepath.IsAbs(overwriteFolder) {
+			cwd, err := os.Getwd()
 
-		if err != nil {
-			log.Panic(err)
+			if err != nil {
+				log.Panic(err)
+			}
+
+			overwriteFolder = filepath.Join(cwd, overwriteFolder)
 		}
 
-		overwriteFolder = filepath.Join(cwd, overwriteFolder)
-	}
+		folder, err := os.Stat(overwriteFolder)
 
-	folder, err := os.Stat(overwriteFolder)
+		if os.IsNotExist(err) {
+			log.Panicln("the folder of '--overwrite=<folder>' not found in your system")
+		}
 
-	if os.IsNotExist(err) {
-		log.Panicln("the folder of '--overwrite=<folder>' not found in your system")
-	}
+		if err != nil {
+			log.Panicln(err)
+		}
 
-	if err != nil {
-		log.Panicln(err)
-	}
-
-	if !folder.IsDir() {
-		log.Panicln("the flag '--overwrite=<folder>' must be a folder")
+		if !folder.IsDir() {
+			log.Panicln("the flag '--overwrite=<folder>' must be a folder")
+		}
 	}
 
 	proxy := forward.NewProxyServer(&forward.ProxyServerOptions{

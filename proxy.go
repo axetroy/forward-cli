@@ -89,9 +89,14 @@ func (p *ProxyServer) Handler() func(http.ResponseWriter, *http.Request) {
 			}
 
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(fmt.Sprintf("%+v\n", errors.WithStack(err))))
-				return
+				if strings.Contains(err.Error(), "file name too long") {
+					p.proxy.ServeHTTP(w, r)
+					return
+				} else {
+					w.WriteHeader(http.StatusInternalServerError)
+					w.Write([]byte(fmt.Sprintf("%+v\n", errors.WithStack(err))))
+					return
+				}
 			}
 
 			if fInfo.IsDir() {
