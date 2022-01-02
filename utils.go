@@ -81,10 +81,9 @@ func replaceHost(content, oldHost, newHost string, useSSL bool, proxyExternal bo
 			return s
 		}
 
-		if net.ParseIP(matchUrl.Hostname()) == nil {
-			if !hostNameRegexp.MatchString(matchUrl.Host) {
-				return s
-			}
+		// if host not a IP address or a valid domain name
+		if net.ParseIP(matchUrl.Hostname()) == nil && !hostNameRegexp.MatchString(matchUrl.Hostname()) {
+			return s
 		}
 
 		// overide url in query

@@ -141,6 +141,15 @@ var a=m;window.W_jd=window.W_jd||{};for(var b=0;b<a.length;b+=2)window.W_jd[a[b]
 window.jsl=window.jsl||{};window.jsl.dh=function(d,e,c){try{var f=document.getElementById(d);if(f)f.innerHTML=e,c&&c();else{var a={id:d,script:String(!!c),milestone:String(google.jslm||0)};google.jsla&&(a.async=google.jsla);var g=document.createElement("div");g.innerHTML=e;var b=g.children[0];b&&(a.tag=b.tagName,a["class"]=String(b.className||null),a.name=String(b.getAttribute("jsname")));google.ml(Error("Missing ID."),!1,a)}}catch(h){google.ml(h,!0,{"jsl.dh":!0})}};(function(){var x=true;
 google.jslm=x?2:1;})();google.x(null, function(){(function(){(function(){google.csct={};google.csct.ps='AOvVaw17ag9mz-2UL3tGGKniglcH\x26ust\x3d1641191845010685';})();})();(function(){(function(){google.csct.rw=true;})();})();(function(){(function(){google.csct.rl=true;})();})();(function(){google.drty&&google.drty(undefined,true);})();});google.drty&&google.drty(undefined,true);`,
 		},
+		{
+			name: "13",
+			args: args{
+				content: "https://example.com:8080/demo",
+				oldHost: "example.com:8080",
+				newHost: "localhost",
+			},
+			want: "http://localhost/demo",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
