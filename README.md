@@ -82,6 +82,17 @@ openssl req -new -x509 -sha256 -key server.key -out server.pem -days 3650
 forward --tls-cert-file=server.pem --tls-key-file=server.key http://example.com
 ```
 
+2. 自定义代理请求
+
+```bash
+# 代理 https://github.com
+forward https://github.com
+# 发起请求
+curl http://0.0.0.0:80/api # 实际请求 https://github.com/api
+# 发起自定义代理
+curl -H "X-Proxy-Target: https://www.google.com" http://0.0.0.0/api # 实际请求 https://www.google.com/api
+```
+
 ### 开源许可
 
 The [MIT License](LICENSE)

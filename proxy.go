@@ -27,6 +27,12 @@ var (
 	regIntegrity = regexp.MustCompile(`\sintegrity="[^"]+"`)
 )
 
+const (
+	headerXProxyTarget = "X-Proxy-Target"
+	headerXOriginHost  = "X-Origin-Host"
+	headerXProxyClient = "X-Proxy-Client"
+)
+
 type ProxyServer struct {
 	*ProxyServerOptions
 	proxy *httputil.ReverseProxy
@@ -149,9 +155,22 @@ func (p *ProxyServer) modifyRequest(req *http.Request) {
 				target = *u
 			}
 		}
+	} else if req.Header.Get(headerXProxyTarget) != "" {
+		targetUrl := req.Header.Get(headerXProxyTarget)
+
+		if u, err := url.Parse(targetUrl); err == nil {
+			if u.Scheme == "" {
+				if p.UseSSL {
+					u.Scheme = "https"
+				} else {
+					u.Scheme = "http"
+				}
+			}
+			target = *u
+		}
 	}
 
-	req.Header.Set("X-Origin-Host", req.Host)
+	req.Header.Set(headerXOriginHost, req.Host)
 	req.Host = target.Host
 	if isProxyUrl {
 		req.URL = &target
@@ -205,7 +224,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 		}
 	}
 
-	proxyHost := res.Request.Header.Get("X-Origin-Host") // localhost:8080 or localhost
+	proxyHost := res.Request.Header.Get(headerXOriginHost) // localhost:8080 or localhost
 
 	var hostName string
 
@@ -221,7 +240,7 @@ func (p *ProxyServer) modifyResponse(res *http.Response) error {
 		hostName = proxyHost
 	}
 
-	res.Header.Set("X-Proxy-Client", "Forward-Cli")
+	res.Header.Set(headerXProxyClient, "Forward-Cli")
 	res.Header.Del("Expect-CT")
 
 	// disable cache

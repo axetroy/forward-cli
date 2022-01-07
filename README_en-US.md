@@ -82,6 +82,17 @@ openssl req -new -x509 -sha256 -key server.key -out server.pem -days 3650
 forward --tls-cert-file=server.pem --tls-key-file=server.key http://example.com
 ```
 
+2. Custom proxy
+
+```bash
+# proxy https://github.com
+forward https://github.com
+# send request
+curl http://0.0.0.0:80/api # request https://github.com/api
+# send custom request
+curl -H "X-Proxy-Target: https://www.google.com" http://0.0.0.0/api # request https://www.google.com/api
+```
+
 ### License
 
 The [MIT License](LICENSE)
