@@ -45,7 +45,7 @@ EXAMPLES:
 
 ### 安装
 
-1. Cask
+1. [Cask](https://github.com/axetroy/cask.rs)
 
    ```bash
    cask install github.com/axetroy/forward-cli
