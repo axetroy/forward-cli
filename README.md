@@ -45,23 +45,29 @@ EXAMPLES:
 
 ### 安装
 
-1. Shell (Mac/Linux)
+1. Cask
+
+   ```bash
+   cask install github.com/axetroy/forward-cli
+   ```
+
+2. Shell (Mac/Linux)
 
    ```bash
    curl -fsSL https://github.com/release-lab/install/raw/v1/install.sh | bash -s -- -r=axetroy/forward-cli -e=forward
    ```
 
-2. PowerShell (Windows):
+3. PowerShell (Windows):
 
    ```powershell
    $r="axetroy/forward-cli";$e="forward";iwr https://github.com/release-lab/install/raw/v1/install.ps1 -useb | iex
    ```
 
-3. [Github release page](https://github.com/axetroy/forward-cli/releases) (全平台)
+4. [Github release page](https://github.com/axetroy/forward-cli/releases) (全平台)
 
    下载可执行文件，然后放到 `$PATH` 目录下
 
-4. 使用 [Golang](https://golang.org) 从源码中构建并安装 (全平台)
+5. 使用 [Golang](https://golang.org) 从源码中构建并安装 (全平台)
 
    ```bash
    go install github.com/axetroy/forward-cli/cmd/forward@latest
