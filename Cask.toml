@@ -1,0 +1,24 @@
+[package]
+name = "github.com/axetroy/forward-cli"
+bin = "forward"
+authors = ["Axetroy <axetroy.dev@gmail.com>"]
+keywords = []
+repository = "https://github.com/axetroy/forward-cli"
+description = """
+A command-line tool to reverse proxy any server. 快速反向代理任何网站
+"""
+license = "MIT"
+
+[darwin]
+x86_64 = { url = "https://github.com/axetroy/forward-cli/releases/download/v{version}/forward_darwin_amd64.tar.gz" }
+aarch64 = { url = "https://github.com/axetroy/forward-cli/releases/download/v{version}/forward_darwin_arm64.tar.gz" }
+
+[windows]
+x86 = { url = "https://github.com/axetroy/forward-cli/releases/download/v{version}/forward_windows_386.tar.gz" }
+x86_64 = { url = "https://github.com/axetroy/forward-cli/releases/download/v{version}/forward_windows_amd64.tar.gz" }
+aarch64 = { url = "https://github.com/axetroy/forward-cli/releases/download/v{version}/forward_windows_arm64.tar.gz" }
+
+[linux]
+x86 = { url = "https://github.com/axetroy/forward-cli/releases/download/v{version}/forward_linux_386.tar.gz" }
+x86_64 = { url = "https://github.com/axetroy/forward-cli/releases/download/v{version}/forward_linux_amd64.tar.gz" }
+aarch64 = { url = "https://github.com/axetroy/forward-cli/releases/download/v{version}/forward_linux_arm64.tar.gz" }
